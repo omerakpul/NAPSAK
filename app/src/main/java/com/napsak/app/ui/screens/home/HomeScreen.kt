@@ -26,12 +26,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.napsak.app.ui.theme.CoralPrimary
 import com.napsak.app.ui.theme.CoralPrimaryDark
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun HomeScreen(
-    onNavigateToLobby: (String) -> Unit
+    onNavigateToLobby: (String) -> Unit,
+    viewModel: HomeViewModel = hiltViewModel()
 ) {
+    val savedName by viewModel.savedUsername.collectAsState()
     var name by remember { mutableStateOf("") }
+
+    LaunchedEffect(savedName) {
+        if (savedName.isNotBlank() && name.isBlank()) {
+            name = savedName
+        }
+    }
+
     var roomCode by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
 
@@ -133,7 +143,11 @@ fun HomeScreen(
                             Button(
                                 onClick = {
                                     if (name.isNotBlank()) {
-                                        onNavigateToLobby("123456")
+                                        viewModel.createRoom(name) { result ->
+                                            result.onSuccess { room ->
+                                                onNavigateToLobby(room.id)
+                                            }
+                                        }
                                     }
                                 },
                                 modifier = Modifier
@@ -205,8 +219,12 @@ fun HomeScreen(
 
                             Button(
                                 onClick = {
-                                    if (roomCode.isNotBlank()) {
-                                        onNavigateToLobby(roomCode)
+                                    if (name.isNotBlank() && roomCode.isNotBlank()) {
+                                        viewModel.joinRoom(roomCode, name) { result ->
+                                            result.onSuccess { room ->
+                                                onNavigateToLobby(room.id)
+                                            }
+                                        }
                                     }
                                 },
                                 modifier = Modifier

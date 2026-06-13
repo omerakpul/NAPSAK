@@ -19,27 +19,44 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.napsak.app.domain.model.Participant
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.napsak.app.domain.model.RoomState
 import com.napsak.app.ui.theme.AmberSecondary
 import com.napsak.app.ui.theme.CoralPrimary
 
 @Composable
 fun LobbyScreen(
     roomId: String,
-    onNavigateToVoting: (String) -> Unit
+    onNavigateToVoting: (String) -> Unit,
+    viewModel: LobbyViewModel = hiltViewModel()
 ) {
-    // Mock list of participants for UI design (will be connected to database flow in Step 2)
-    val participants = remember {
-        mutableStateListOf(
-            Participant(id = "1", name = "Ahmet (Host)", isReady = true),
-            Participant(id = "2", name = "Mehmet (Siz)", isReady = false),
-            Participant(id = "3", name = "Zeynep", isReady = true),
-            Participant(id = "4", name = "Buse", isReady = false)
-        )
+    val roomState by viewModel.room.collectAsState()
+    val currentUserId by viewModel.currentUserId.collectAsState()
+
+    // Start observing room updates when screen opens
+    LaunchedEffect(roomId) {
+        viewModel.observeRoom(roomId)
     }
 
-    var isReady by remember { mutableStateOf(false) }
-    val isHost = true // Mock host status
+    // Auto-navigate all participants when host starts voting
+    LaunchedEffect(roomState?.state) {
+        if (roomState?.state == RoomState.VOTING) {
+            onNavigateToVoting(roomId)
+        }
+    }
+
+    val room = roomState
+    if (room == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = CoralPrimary)
+        }
+        return
+    }
+
+    val participants = room.participants.values.toList()
+    val myParticipant = room.participants[currentUserId]
+    val isReady = myParticipant?.isReady == true
+    val isHost = room.hostId == currentUserId
 
     Box(
         modifier = Modifier
@@ -139,6 +156,8 @@ fun LobbyScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(participants) { participant ->
+                    val isParticipantHost = room.hostId == participant.id
+                    val displayName = if (isParticipantHost) "${participant.name} (Host)" else participant.name
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
@@ -174,7 +193,7 @@ fun LobbyScreen(
                             Spacer(modifier = Modifier.width(16.dp))
 
                             Text(
-                                text = participant.name,
+                                text = displayName,
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontWeight = FontWeight.SemiBold
                                 ),
@@ -215,12 +234,7 @@ fun LobbyScreen(
                 // Toggle Ready Button
                 Button(
                     onClick = {
-                        isReady = !isReady
-                        // Update local participant state for UI testing
-                        val myIndex = participants.indexOfFirst { it.id == "2" }
-                        if (myIndex != -1) {
-                            participants[myIndex] = participants[myIndex].copy(isReady = isReady)
-                        }
+                        viewModel.toggleReady(roomId, !isReady)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -247,11 +261,14 @@ fun LobbyScreen(
                 if (isHost) {
                     val allReady = participants.all { it.isReady }
                     Button(
-                        onClick = { onNavigateToVoting(roomId) },
+                        onClick = {
+                            viewModel.startVoting(roomId) { }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
                         shape = RoundedCornerShape(14.dp),
+                        enabled = allReady,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = CoralPrimary
                         )
