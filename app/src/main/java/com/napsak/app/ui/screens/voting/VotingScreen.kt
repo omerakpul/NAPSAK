@@ -31,6 +31,7 @@ import androidx.activity.compose.BackHandler
 import coil.compose.AsyncImage
 import com.napsak.app.domain.model.Choice
 import com.napsak.app.ui.screens.shared.SharedSessionViewModel
+import com.napsak.app.ui.theme.CoralPrimary
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -52,6 +53,9 @@ fun VotingScreen(
 
     var currentIndex by remember { mutableIntStateOf(0) }
     val currentChoice = choices.getOrNull(currentIndex)
+
+    var isSelectingWinner by remember { mutableStateOf(false) }
+    var animatingChoice by remember { mutableStateOf<Choice?>(null) }
 
     Box(
         modifier = Modifier
@@ -138,16 +142,43 @@ fun VotingScreen(
                             modifier = Modifier.padding(horizontal = 24.dp)
                         )
                         Spacer(modifier = Modifier.height(24.dp))
+                        val coroutineScope = rememberCoroutineScope()
                         Button(
                             onClick = {
-                                // Pick winner: random from liked, or random from all if none liked
-                                val winner = if (likedChoices.isNotEmpty()) {
-                                    likedChoices.random()
+                                val candidates = if (likedChoices.isNotEmpty()) likedChoices else choices
+                                val winner = candidates.random()
+                                val isTie = candidates.size > 1
+
+                                if (isTie) {
+                                    isSelectingWinner = true
+                                    coroutineScope.launch {
+                                        val animationSteps = listOf(
+                                            50L, 50L, 60L, 60L, 70L, 80L, 90L, 100L, 120L, 140L, 170L, 200L, 240L, 300L, 380L, 480L, 600L
+                                        )
+                                        var lastIndex = -1
+                                        for (delayTime in animationSteps) {
+                                            var nextIndex = (0 until candidates.size).random()
+                                            if (candidates.size > 1) {
+                                                while (nextIndex == lastIndex) {
+                                                    nextIndex = (0 until candidates.size).random()
+                                                }
+                                            }
+                                            lastIndex = nextIndex
+                                            animatingChoice = candidates[nextIndex]
+                                            kotlinx.coroutines.delay(delayTime)
+                                        }
+                                        
+                                        animatingChoice = winner
+                                        kotlinx.coroutines.delay(1000L) // Kazananı 1 saniye göster
+                                        
+                                        sharedViewModel.setWinner(winner.copy(voteCount = if (likedChoices.isNotEmpty()) 1 else 0))
+                                        isSelectingWinner = false
+                                        onNavigateToResult(roomId)
+                                    }
                                 } else {
-                                    choices.random()
+                                    sharedViewModel.setWinner(winner.copy(voteCount = if (likedChoices.isNotEmpty()) 1 else 0))
+                                    onNavigateToResult(roomId)
                                 }
-                                sharedViewModel.setWinner(winner.copy(voteCount = likedChoices.size))
-                                onNavigateToResult(roomId)
                             },
                             shape = RoundedCornerShape(14.dp)
                         ) {
@@ -214,6 +245,87 @@ fun VotingScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Eşitlik Çözücü Animasyon Dialog
+        if (isSelectingWinner && animatingChoice != null) {
+            AlertDialog(
+                onDismissRequest = {}, // Animasyon sırasında kapatılamasın
+                title = {
+                    Text(
+                        text = "Eşitlik Çözülüyor...",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = CoralPrimary,
+                            letterSpacing = 1.sp
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                },
+                text = {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
+                    ) {
+                        Card(
+                            modifier = Modifier
+                                .size(width = 220.dp, height = 280.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        ) {
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                if (!animatingChoice!!.imageUrl.isNullOrBlank()) {
+                                    AsyncImage(
+                                        model = animatingChoice!!.imageUrl,
+                                        contentDescription = animatingChoice!!.name,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                                    )
+                                    Text(
+                                        text = animatingChoice!!.name,
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        modifier = Modifier.padding(12.dp),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = animatingChoice!!.name,
+                                            style = MaterialTheme.typography.titleLarge.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                textAlign = TextAlign.Center
+                                            ),
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(20.dp))
+                        
+                        CircularProgressIndicator(
+                            color = CoralPrimary,
+                            modifier = Modifier.size(32.dp),
+                            strokeWidth = 3.dp
+                        )
+                    }
+                },
+                confirmButton = {},
+                shape = RoundedCornerShape(24.dp)
+            )
         }
     }
 }
