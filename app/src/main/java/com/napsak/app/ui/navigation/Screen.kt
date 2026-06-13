@@ -10,6 +10,9 @@ sealed interface Screen {
     data class Lobby(val roomId: String) : Screen
 
     @Serializable
+    data class CreateChoices(val roomId: String) : Screen
+
+    @Serializable
     data class Voting(val roomId: String) : Screen
 
     @Serializable
