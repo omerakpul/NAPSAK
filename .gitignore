@@ -13,3 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Documentation files (local only)
+product.md
+development_plan.md
