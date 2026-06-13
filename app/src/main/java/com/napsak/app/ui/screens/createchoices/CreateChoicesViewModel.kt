@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
+import com.napsak.app.domain.usecase.StartVotingUseCase
 import javax.inject.Inject
 
 data class CreateChoicesUiState(
@@ -25,7 +26,8 @@ data class CreateChoicesUiState(
 
 @HiltViewModel
 class CreateChoicesViewModel @Inject constructor(
-    private val userPreferencesDataSource: UserPreferencesDataSource
+    private val userPreferencesDataSource: UserPreferencesDataSource,
+    private val startVotingUseCase: StartVotingUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateChoicesUiState())
@@ -140,6 +142,18 @@ class CreateChoicesViewModel @Inject constructor(
                 isEditing = false,
                 editingChoiceId = null
             )
+        }
+    }
+
+    fun startVoting(roomId: String, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            val currentChoices = _uiState.value.choices
+            if (currentChoices.isNotEmpty()) {
+                val result = startVotingUseCase(roomId, currentChoices)
+                if (result.isSuccess) {
+                    onComplete()
+                }
+            }
         }
     }
 

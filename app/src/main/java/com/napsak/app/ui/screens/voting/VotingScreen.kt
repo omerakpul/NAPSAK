@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.activity.compose.BackHandler
 import coil.compose.AsyncImage
 import com.napsak.app.domain.model.Choice
+import com.napsak.app.domain.model.RoomState
 import com.napsak.app.ui.screens.shared.SharedSessionViewModel
 import com.napsak.app.ui.theme.CoralPrimary
 import kotlinx.coroutines.launch
@@ -56,6 +57,21 @@ fun VotingScreen(
 
     var isSelectingWinner by remember { mutableStateOf(false) }
     var animatingChoice by remember { mutableStateOf<Choice?>(null) }
+
+    val currentRoom by sharedViewModel.currentRoom.collectAsState()
+    val winnerChoice by sharedViewModel.winnerChoice.collectAsState()
+
+    // Oylama ekranı açıldığında oda güncellemelerini takip et
+    LaunchedEffect(roomId) {
+        sharedViewModel.observeRoom(roomId)
+    }
+
+    // Oda durumu RESULT olduğunda ve kazanan belli olduğunda otomatik olarak sonuç ekranına yönlendir
+    LaunchedEffect(currentRoom?.state, winnerChoice) {
+        if (currentRoom?.state == RoomState.RESULT && winnerChoice != null) {
+            onNavigateToResult(roomId)
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -145,39 +161,58 @@ fun VotingScreen(
                         val coroutineScope = rememberCoroutineScope()
                         Button(
                             onClick = {
-                                val candidates = if (likedChoices.isNotEmpty()) likedChoices else choices
-                                val winner = candidates.random()
-                                val isTie = candidates.size > 1
+                                val room = currentRoom
+                                val isHost = room?.hostId == sharedViewModel.currentUserId.value
+                                
+                                if (isHost) {
+                                    val dbChoices = room.choices.values.toList()
+                                    val maxVotes = dbChoices.maxOfOrNull { it.voteCount } ?: 0
+                                    
+                                    val candidates = if (maxVotes > 0) {
+                                        dbChoices.filter { it.voteCount == maxVotes }
+                                    } else {
+                                        dbChoices
+                                    }
+                                    
+                                    val winner = candidates.random()
+                                    val isTie = candidates.size > 1
 
-                                if (isTie) {
-                                    isSelectingWinner = true
-                                    coroutineScope.launch {
-                                        val animationSteps = listOf(
-                                            50L, 50L, 60L, 60L, 70L, 80L, 90L, 100L, 120L, 140L, 170L, 200L, 240L, 300L, 380L, 480L, 600L
-                                        )
-                                        var lastIndex = -1
-                                        for (delayTime in animationSteps) {
-                                            var nextIndex = (0 until candidates.size).random()
-                                            if (candidates.size > 1) {
-                                                while (nextIndex == lastIndex) {
-                                                    nextIndex = (0 until candidates.size).random()
+                                    if (isTie) {
+                                        isSelectingWinner = true
+                                        coroutineScope.launch {
+                                            val animationSteps = listOf(
+                                                50L, 50L, 60L, 60L, 70L, 80L, 90L, 100L, 120L, 140L, 170L, 200L, 240L, 300L, 380L, 480L, 600L
+                                            )
+                                            var lastIndex = -1
+                                            for (delayTime in animationSteps) {
+                                                var nextIndex = (0 until candidates.size).random()
+                                                if (candidates.size > 1) {
+                                                    while (nextIndex == lastIndex) {
+                                                        nextIndex = (0 until candidates.size).random()
+                                                    }
                                                 }
+                                                lastIndex = nextIndex
+                                                animatingChoice = candidates[nextIndex]
+                                                kotlinx.coroutines.delay(delayTime)
                                             }
-                                            lastIndex = nextIndex
-                                            animatingChoice = candidates[nextIndex]
-                                            kotlinx.coroutines.delay(delayTime)
+                                            
+                                            animatingChoice = winner
+                                            kotlinx.coroutines.delay(1000L)
+                                            
+                                            sharedViewModel.submitVotesAndDeclareWinner(roomId, likedChoices, winner) {
+                                                isSelectingWinner = false
+                                                onNavigateToResult(roomId)
+                                            }
                                         }
-                                        
-                                        animatingChoice = winner
-                                        kotlinx.coroutines.delay(1000L) // Kazananı 1 saniye göster
-                                        
-                                        sharedViewModel.setWinner(winner.copy(voteCount = if (likedChoices.isNotEmpty()) 1 else 0))
-                                        isSelectingWinner = false
-                                        onNavigateToResult(roomId)
+                                    } else {
+                                        sharedViewModel.submitVotesAndDeclareWinner(roomId, likedChoices, winner) {
+                                            onNavigateToResult(roomId)
+                                        }
                                     }
                                 } else {
-                                    sharedViewModel.setWinner(winner.copy(voteCount = if (likedChoices.isNotEmpty()) 1 else 0))
-                                    onNavigateToResult(roomId)
+                                    sharedViewModel.submitVotesAndDeclareWinner(roomId, likedChoices, null) {
+                                        onNavigateToResult(roomId)
+                                    }
                                 }
                             },
                             shape = RoundedCornerShape(14.dp)

@@ -24,10 +24,14 @@ import com.napsak.app.domain.model.RoomState
 import com.napsak.app.ui.theme.AmberSecondary
 import com.napsak.app.ui.theme.CoralPrimary
 
+import com.napsak.app.ui.screens.shared.SharedSessionViewModel
+
 @Composable
 fun LobbyScreen(
     roomId: String,
+    sharedViewModel: SharedSessionViewModel,
     onNavigateToCreateChoices: (String) -> Unit,
+    onNavigateToVoting: (String) -> Unit,
     viewModel: LobbyViewModel = hiltViewModel()
 ) {
     val roomState by viewModel.room.collectAsState()
@@ -38,10 +42,12 @@ fun LobbyScreen(
         viewModel.observeRoom(roomId)
     }
 
-    // Auto-navigate all participants when host starts voting
+    // Oylama resmi olarak başladığında tüm katılımcıları oylama ekranına yönlendir
     LaunchedEffect(roomState?.state) {
         if (roomState?.state == RoomState.VOTING) {
-            onNavigateToCreateChoices(roomId)
+            val roomChoices = roomState?.choices?.values?.toList() ?: emptyList()
+            sharedViewModel.setChoices(roomChoices)
+            onNavigateToVoting(roomId)
         }
     }
 
@@ -262,7 +268,7 @@ fun LobbyScreen(
                     val allReady = participants.all { it.isReady }
                     Button(
                         onClick = {
-                            viewModel.startVoting(roomId) { }
+                            onNavigateToCreateChoices(roomId)
                         },
                         modifier = Modifier
                             .fillMaxWidth()

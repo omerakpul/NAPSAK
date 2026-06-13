@@ -278,7 +278,9 @@ fun CreateChoicesScreen(
             // Start Voting Button
             Button(
                 onClick = {
-                    onNavigateToVoting(roomId, viewModel.getChoices())
+                    viewModel.startVoting(roomId) {
+                        onNavigateToVoting(roomId, viewModel.getChoices())
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()

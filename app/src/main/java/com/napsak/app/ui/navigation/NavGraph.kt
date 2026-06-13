@@ -38,8 +38,14 @@ fun NapsakNavGraph(
             val lobby = backStackEntry.toRoute<Screen.Lobby>()
             LobbyScreen(
                 roomId = lobby.roomId,
+                sharedViewModel = sharedViewModel,
                 onNavigateToCreateChoices = { roomId ->
                     navController.navigate(Screen.CreateChoices(roomId)) {
+                        popUpTo(Screen.Home) { saveState = true }
+                    }
+                },
+                onNavigateToVoting = { roomId ->
+                    navController.navigate(Screen.Voting(roomId)) {
                         popUpTo(Screen.Home) { saveState = true }
                     }
                 }

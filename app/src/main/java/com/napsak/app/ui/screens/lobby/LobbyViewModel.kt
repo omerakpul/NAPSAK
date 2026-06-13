@@ -6,7 +6,6 @@ import com.napsak.app.domain.model.Room
 import com.napsak.app.domain.repository.RoomRepository
 import com.napsak.app.domain.usecase.ObserveRoomUseCase
 import com.napsak.app.domain.usecase.SetParticipantReadyUseCase
-import com.napsak.app.domain.usecase.StartVotingUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -16,7 +15,6 @@ import javax.inject.Inject
 class LobbyViewModel @Inject constructor(
     private val observeRoomUseCase: ObserveRoomUseCase,
     private val setParticipantReadyUseCase: SetParticipantReadyUseCase,
-    private val startVotingUseCase: StartVotingUseCase,
     private val roomRepository: RoomRepository
 ) : ViewModel() {
 
@@ -48,13 +46,6 @@ class LobbyViewModel @Inject constructor(
             viewModelScope.launch {
                 setParticipantReadyUseCase(roomId, userId, isReady)
             }
-        }
-    }
-
-    fun startVoting(roomId: String, onResult: (Result<Unit>) -> Unit) {
-        viewModelScope.launch {
-            val result = startVotingUseCase(roomId)
-            onResult(result)
         }
     }
 }
