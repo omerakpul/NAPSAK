@@ -37,3 +37,10 @@ data class Room(
     val participants: Map<String, Participant> = emptyMap(),
     val choices: Map<String, Choice> = emptyMap()
 )
+
+@Serializable
+data class SavedChoiceList(
+    val id: String = "",
+    val name: String = "",
+    val choices: List<Choice> = emptyList()
+)

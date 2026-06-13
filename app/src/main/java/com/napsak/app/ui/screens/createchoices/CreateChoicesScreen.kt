@@ -3,15 +3,18 @@ package com.napsak.app.ui.screens.createchoices
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -38,6 +41,10 @@ fun CreateChoicesScreen(
     viewModel: CreateChoicesViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    var showSaveDialog by remember { mutableStateOf(false) }
+    var listNameInput by remember { mutableStateOf("") }
+    var showLoadDialog by remember { mutableStateOf(false) }
 
     val gradient = Brush.horizontalGradient(
         colors = listOf(CoralPrimary, CoralPrimaryDark)
@@ -174,19 +181,43 @@ fun CreateChoicesScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Eklenen Seçenekler",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold
+                Column {
+                    Text(
+                        text = "Eklenen Seçenekler",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        )
                     )
-                )
-                Text(
-                    text = "${uiState.choices.size} adet",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = CoralPrimary,
-                        fontWeight = FontWeight.SemiBold
+                    Text(
+                        text = "${uiState.choices.size} adet",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = CoralPrimary,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     )
-                )
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Listeyi Kaydet Butonu
+                    TextButton(
+                        onClick = { showSaveDialog = true },
+                        enabled = uiState.choices.isNotEmpty(),
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = CoralPrimary,
+                            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        )
+                    ) {
+                        Text("Listeyi Kaydet", fontWeight = FontWeight.Bold)
+                    }
+
+                    // Listelerim Butonu
+                    TextButton(
+                        onClick = { showLoadDialog = true },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
+                    ) {
+                        Text("Listelerim", fontWeight = FontWeight.Bold)
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -303,6 +334,148 @@ fun CreateChoicesScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Listeyi Kaydet Dialog
+        if (showSaveDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    showSaveDialog = false
+                    listNameInput = ""
+                },
+                title = { Text("Listeyi Kaydet") },
+                text = {
+                    OutlinedTextField(
+                        value = listNameInput,
+                        onValueChange = { listNameInput = it },
+                        label = { Text("Liste Adı") },
+                        placeholder = { Text("ör: Yemek Listesi, Oyunlar...") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = CoralPrimary,
+                            focusedLabelColor = CoralPrimary,
+                            cursorColor = CoralPrimary
+                        )
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (listNameInput.isNotBlank()) {
+                                viewModel.saveChoiceList(listNameInput)
+                                showSaveDialog = false
+                                listNameInput = ""
+                            }
+                        },
+                        enabled = listNameInput.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(containerColor = CoralPrimary)
+                    ) {
+                        Text("Kaydet")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showSaveDialog = false
+                            listNameInput = ""
+                        }
+                    ) {
+                        Text("İptal")
+                    }
+                },
+                shape = RoundedCornerShape(20.dp)
+            )
+        }
+
+        // Listelerim Dialog
+        if (showLoadDialog) {
+            AlertDialog(
+                onDismissRequest = { showLoadDialog = false },
+                title = { Text("Kayıtlı Listelerim") },
+                text = {
+                    if (uiState.savedLists.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Henüz kayıtlı bir listeniz yok.",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 260.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(uiState.savedLists) { savedList ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clickable {
+                                                    viewModel.loadChoiceList(savedList)
+                                                    showLoadDialog = false
+                                                }
+                                        ) {
+                                            Text(
+                                                text = savedList.name,
+                                                style = MaterialTheme.typography.bodyLarge.copy(
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = "${savedList.choices.size} seçenek içeriyor",
+                                                style = MaterialTheme.typography.bodySmall.copy(
+                                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                                )
+                                            )
+                                        }
+
+                                        IconButton(
+                                            onClick = { viewModel.deleteChoiceList(savedList.id) }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Sil",
+                                                tint = Color(0xFFE57373)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showLoadDialog = false }) {
+                        Text("Kapat")
+                    }
+                },
+                shape = RoundedCornerShape(20.dp)
+            )
         }
     }
 }
