@@ -1,0 +1,37 @@
+package com.napsak.app.domain.model
+
+import kotlinx.serialization.Serializable
+
+enum class RoomState {
+    WAITING,
+    READY,
+    VOTING,
+    RESULT
+}
+
+@Serializable
+data class Participant(
+    val id: String = "",
+    val name: String = "",
+    val isReady: Boolean = false
+)
+
+@Serializable
+data class Option(
+    val id: String = "",
+    val name: String = "",
+    val details: String = "",
+    val imageUrl: String? = null,
+    val voteCount: Int = 0
+)
+
+@Serializable
+data class Room(
+    val id: String = "",
+    val hostId: String = "",
+    val state: RoomState = RoomState.WAITING,
+    val winnerOptionId: String? = null,
+    val createdAt: Long = 0L,
+    val participants: Map<String, Participant> = emptyMap(),
+    val options: Map<String, Option> = emptyMap()
+)
