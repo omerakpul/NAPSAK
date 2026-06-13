@@ -99,6 +99,12 @@ class SharedSessionViewModel @Inject constructor(
         }
     }
 
+    fun submitVotes(roomId: String, likedIds: List<String>) {
+        viewModelScope.launch {
+            submitVotesUseCase(roomId, likedIds)
+        }
+    }
+
     fun clear() {
         _choices.value = emptyList()
         _winnerChoice.value = null

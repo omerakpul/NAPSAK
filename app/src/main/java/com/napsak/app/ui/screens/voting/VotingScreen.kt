@@ -58,6 +58,8 @@ fun VotingScreen(
     var isSelectingWinner by remember { mutableStateOf(false) }
     var animatingChoice by remember { mutableStateOf<Choice?>(null) }
 
+    var votesSubmitted by remember { mutableStateOf(false) }
+
     val currentRoom by sharedViewModel.currentRoom.collectAsState()
     val winnerChoice by sharedViewModel.winnerChoice.collectAsState()
 
@@ -69,6 +71,11 @@ fun VotingScreen(
     // Oda durumu RESULT olduğunda ve kazanan belli olduğunda otomatik olarak sonuç ekranına yönlendir
     LaunchedEffect(currentRoom?.state, winnerChoice) {
         if (currentRoom?.state == RoomState.RESULT && winnerChoice != null) {
+            val isHost = currentRoom?.hostId == sharedViewModel.currentUserId.value
+            if (!isHost && !votesSubmitted) {
+                votesSubmitted = true
+                sharedViewModel.submitVotes(roomId, likedChoices.map { it.id })
+            }
             onNavigateToResult(roomId)
         }
     }
@@ -161,17 +168,24 @@ fun VotingScreen(
                         val coroutineScope = rememberCoroutineScope()
                         Button(
                             onClick = {
-                                val room = currentRoom
-                                val isHost = room?.hostId == sharedViewModel.currentUserId.value
+                                val room = currentRoom ?: return@Button
+                                val isHost = room.hostId == sharedViewModel.currentUserId.value
                                 
                                 if (isHost) {
+                                    // Combine database choices with host's own liked choices
                                     val dbChoices = room.choices.values.toList()
-                                    val maxVotes = dbChoices.maxOfOrNull { it.voteCount } ?: 0
+                                    val finalChoices = dbChoices.map { choice ->
+                                        val isLikedByHost = likedChoices.any { it.id == choice.id }
+                                        val additionalVote = if (isLikedByHost) 1 else 0
+                                        choice.copy(voteCount = choice.voteCount + additionalVote)
+                                    }
+                                    
+                                    val maxVotes = finalChoices.maxOfOrNull { it.voteCount } ?: 0
                                     
                                     val candidates = if (maxVotes > 0) {
-                                        dbChoices.filter { it.voteCount == maxVotes }
+                                        finalChoices.filter { it.voteCount == maxVotes }
                                     } else {
-                                        dbChoices
+                                        finalChoices
                                     }
                                     
                                     val winner = candidates.random()
@@ -199,19 +213,28 @@ fun VotingScreen(
                                             animatingChoice = winner
                                             kotlinx.coroutines.delay(1000L)
                                             
-                                            sharedViewModel.submitVotesAndDeclareWinner(roomId, likedChoices, winner) {
-                                                isSelectingWinner = false
-                                                onNavigateToResult(roomId)
+                                            if (!votesSubmitted) {
+                                                votesSubmitted = true
+                                                sharedViewModel.submitVotesAndDeclareWinner(roomId, likedChoices.toList(), winner) {
+                                                    isSelectingWinner = false
+                                                    onNavigateToResult(roomId)
+                                                }
                                             }
                                         }
                                     } else {
-                                        sharedViewModel.submitVotesAndDeclareWinner(roomId, likedChoices, winner) {
-                                            onNavigateToResult(roomId)
+                                        if (!votesSubmitted) {
+                                            votesSubmitted = true
+                                            sharedViewModel.submitVotesAndDeclareWinner(roomId, likedChoices.toList(), winner) {
+                                                onNavigateToResult(roomId)
+                                            }
                                         }
                                     }
                                 } else {
-                                    sharedViewModel.submitVotesAndDeclareWinner(roomId, likedChoices, null) {
-                                        onNavigateToResult(roomId)
+                                    if (!votesSubmitted) {
+                                        votesSubmitted = true
+                                        sharedViewModel.submitVotesAndDeclareWinner(roomId, likedChoices.toList(), null) {
+                                            onNavigateToResult(roomId)
+                                        }
                                     }
                                 }
                             },
