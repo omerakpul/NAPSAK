@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.BackHandler
 import coil.compose.AsyncImage
 import com.napsak.app.domain.model.Choice
 import com.napsak.app.ui.screens.shared.SharedSessionViewModel
@@ -39,6 +40,10 @@ fun VotingScreen(
     sharedViewModel: SharedSessionViewModel,
     onNavigateToResult: (String) -> Unit
 ) {
+    BackHandler(enabled = true) {
+        // Oylama esnasında geri tuşunu devre dışı bırak
+    }
+
     val allChoices by sharedViewModel.choices.collectAsState()
     val choices = remember(allChoices) { allChoices.toList() }
 
@@ -230,84 +235,143 @@ fun SwipeableCard(
     val offsetX = remember(choice.id) { Animatable(0f) }
     val rotation = offsetX.value / screenWidth * 25f
 
-    Card(
+    Box(
         modifier = Modifier
             .fillMaxHeight(0.9f)
-            .fillMaxWidth(0.95f)
-            .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-            .graphicsLayer {
-                rotationZ = rotation
+            .fillMaxWidth(0.95f),
+        contentAlignment = Alignment.Center
+    ) {
+        // Sürükleme yönüne göre değişen arka plan (Yeşil/Kırmızı)
+        val alpha = (kotlin.math.abs(offsetX.value) / swipeThreshold).coerceAtMost(1f) * 0.25f
+        if (alpha > 0f) {
+            val bgColor = if (offsetX.value > 0) {
+                Color(0xFF4CAF50).copy(alpha = alpha) // Yeşil (Beğen)
+            } else {
+                Color(0xFFE57373).copy(alpha = alpha) // Kırmızı (Pas geç)
             }
-            .pointerInput(choice.id) {
-                detectDragGestures(
-                    onDragEnd = {
-                        if (isSwiped) return@detectDragGestures
-                        coroutineScope.launch {
-                            if (offsetX.value > swipeThreshold) {
-                                isSwiped = true
-                                // Swipe Right
-                                offsetX.animateTo(screenWidth, animationSpec = tween(300))
-                                onSwipeRight()
-                            } else if (offsetX.value < -swipeThreshold) {
-                                isSwiped = true
-                                // Swipe Left
-                                offsetX.animateTo(-screenWidth, animationSpec = tween(300))
-                                onSwipeLeft()
-                            } else {
-                                // Reset position
-                                offsetX.animateTo(0f, animationSpec = tween(200))
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(bgColor)
+            )
+        }
+
+        Card(
+            modifier = Modifier
+                .fillMaxSize()
+                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+                .graphicsLayer {
+                    rotationZ = rotation
+                }
+                .pointerInput(choice.id) {
+                    detectDragGestures(
+                        onDragEnd = {
+                            if (isSwiped) return@detectDragGestures
+                            coroutineScope.launch {
+                                if (offsetX.value > swipeThreshold) {
+                                    isSwiped = true
+                                    // Swipe Right
+                                    offsetX.animateTo(screenWidth, animationSpec = tween(300))
+                                    onSwipeRight()
+                                } else if (offsetX.value < -swipeThreshold) {
+                                    isSwiped = true
+                                    // Swipe Left
+                                    offsetX.animateTo(-screenWidth, animationSpec = tween(300))
+                                    onSwipeLeft()
+                                } else {
+                                    // Reset position
+                                    offsetX.animateTo(0f, animationSpec = tween(200))
+                                }
+                            }
+                        },
+                        onDrag = { change, dragAmount ->
+                            if (isSwiped) return@detectDragGestures
+                            change.consume()
+                            coroutineScope.launch {
+                                offsetX.snapTo(offsetX.value + dragAmount.x)
                             }
                         }
-                    },
-                    onDrag = { change, dragAmount ->
-                        if (isSwiped) return@detectDragGestures
-                        change.consume()
-                        coroutineScope.launch {
-                            offsetX.snapTo(offsetX.value + dragAmount.x)
+                    )
+                },
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = if (choice.imageUrl.isNullOrBlank()) Arrangement.Center else Arrangement.Top,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (!choice.imageUrl.isNullOrBlank()) {
+                    // Resim varsa
+                    AsyncImage(
+                        model = choice.imageUrl,
+                        contentDescription = choice.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    )
+
+                    // Alt detay alanı
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp)
+                    ) {
+                        Text(
+                            text = choice.name,
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 22.sp
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = choice.details,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            ),
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                } else {
+                    // Resim yoksa ortalanmış içerik
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = choice.name,
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                textAlign = TextAlign.Center,
+                                fontSize = 28.sp
+                            )
+                        )
+
+                        if (choice.details.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = choice.details,
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    textAlign = TextAlign.Center
+                                ),
+                                maxLines = 6,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
-                )
-            },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Choice Image
-            AsyncImage(
-                model = choice.imageUrl,
-                contentDescription = choice.name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-            )
-
-            // Info details
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
-            ) {
-                Text(
-                    text = choice.name,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 22.sp
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = choice.details,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    ),
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
+                }
             }
         }
     }
