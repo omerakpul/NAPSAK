@@ -22,7 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.napsak.app.domain.model.Option
+import com.napsak.app.domain.model.Choice
 import com.napsak.app.ui.theme.CoralPrimary
 import com.napsak.app.ui.theme.CoralPrimaryDark
 
@@ -33,8 +33,8 @@ fun ResultScreen(
 ) {
     val context = LocalContext.current
 
-    // Mock winning option (will be calculated dynamically in Step 2/5)
-    val winnerOption = Option(
+    // Mock winning choice (will be calculated dynamically in Step 2/5)
+    val winnerChoice = Choice(
         id = "1",
         name = "Akali Burger",
         details = "İstanbul'un en iyi el yapımı gurme hamburgerleri. Nefis soslar ve sulu dana köftesiyle unutulmaz bir lezzet deneyimi.",
@@ -100,8 +100,8 @@ fun ResultScreen(
                     Column(modifier = Modifier.fillMaxSize()) {
                         // Image
                         AsyncImage(
-                            model = winnerOption.imageUrl,
-                            contentDescription = winnerOption.name,
+                            model = winnerChoice.imageUrl,
+                            contentDescription = winnerChoice.name,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .weight(1f)
@@ -121,7 +121,7 @@ fun ResultScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = winnerOption.name,
+                                    text = winnerChoice.name,
                                     style = MaterialTheme.typography.titleLarge.copy(
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 24.sp
@@ -133,7 +133,7 @@ fun ResultScreen(
                                     onClick = {},
                                     label = {
                                         Text(
-                                            text = "${winnerOption.voteCount} Oy",
+                                            text = "${winnerChoice.voteCount} Oy",
                                             fontWeight = FontWeight.Bold,
                                             color = CoralPrimary
                                         )
@@ -145,7 +145,7 @@ fun ResultScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = winnerOption.details,
+                                text = winnerChoice.details,
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                 )
@@ -165,7 +165,7 @@ fun ResultScreen(
                 // Open in Maps Button
                 Button(
                     onClick = {
-                        val gmmIntentUri = Uri.parse("geo:0,0?q=${Uri.encode(winnerOption.name)}")
+                        val gmmIntentUri = Uri.parse("geo:0,0?q=${Uri.encode(winnerChoice.name)}")
                         val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
                             setPackage("com.google.android.apps.maps")
                         }
@@ -173,7 +173,7 @@ fun ResultScreen(
                             context.startActivity(mapIntent)
                         } else {
                             // Fallback to web browser search
-                            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(winnerOption.name)}"))
+                            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(winnerChoice.name)}"))
                             context.startActivity(webIntent)
                         }
                     },

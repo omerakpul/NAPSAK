@@ -17,7 +17,7 @@ data class Participant(
 )
 
 @Serializable
-data class Option(
+data class Choice(
     val id: String = "",
     val name: String = "",
     val details: String = "",
@@ -30,8 +30,8 @@ data class Room(
     val id: String = "",
     val hostId: String = "",
     val state: RoomState = RoomState.WAITING,
-    val winnerOptionId: String? = null,
+    val winnerChoiceId: String? = null,
     val createdAt: Long = 0L,
     val participants: Map<String, Participant> = emptyMap(),
-    val options: Map<String, Option> = emptyMap()
+    val choices: Map<String, Choice> = emptyMap()
 )

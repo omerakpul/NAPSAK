@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.napsak.app.domain.model.Option
+import com.napsak.app.domain.model.Choice
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -38,33 +38,33 @@ fun VotingScreen(
     onNavigateToResult: (String) -> Unit
 ) {
     // Mock restaurant list for oylama (voting) session
-    val options = remember {
+    val choices = remember {
         mutableStateListOf(
-            Option(
+            Choice(
                 id = "1",
                 name = "Akali Burger",
                 details = "İstanbul'un en iyi el yapımı gurme hamburgerleri.",
                 imageUrl = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500"
             ),
-            Option(
+            Choice(
                 id = "2",
                 name = "Pizzeria Pera",
                 details = "Odun ateşinde pişen gerçek çıtır Napoli pizzası.",
                 imageUrl = "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500"
             ),
-            Option(
+            Choice(
                 id = "3",
                 name = "Kebapçı Emin",
                 details = "Zırh kıymasından közlenmiş biberli enfes Adana kebabı.",
                 imageUrl = "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500"
             ),
-            Option(
+            Choice(
                 id = "4",
                 name = "Sushico",
                 details = "Taze malzemelerle hazırlanan Uzak Doğu sushi tabakları.",
                 imageUrl = "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500"
             ),
-            Option(
+            Choice(
                 id = "5",
                 name = "Green Salads",
                 details = "Doyurucu ve sağlıklı taze zeytinyağlı salata çeşitleri.",
@@ -74,7 +74,7 @@ fun VotingScreen(
     }
 
     var currentIndex by remember { mutableIntStateOf(0) }
-    val currentOption = options.getOrNull(currentIndex)
+    val currentChoice = choices.getOrNull(currentIndex)
 
     Box(
         modifier = Modifier
@@ -102,7 +102,7 @@ fun VotingScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "${currentIndex.coerceAtMost(options.size)} / ${options.size}",
+                text = "${currentIndex.coerceAtMost(choices.size)} / ${choices.size}",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )
@@ -117,9 +117,9 @@ fun VotingScreen(
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                if (currentOption != null) {
+                if (currentChoice != null) {
                     SwipeableCard(
-                        option = currentOption,
+                        choice = currentChoice,
                         onSwipeLeft = {
                             currentIndex++
                         },
@@ -164,7 +164,7 @@ fun VotingScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Action Buttons (Cross & Heart)
-            if (currentOption != null) {
+            if (currentChoice != null) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
@@ -217,7 +217,7 @@ fun VotingScreen(
 
 @Composable
 fun SwipeableCard(
-    option: Option,
+    choice: Choice,
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit
 ) {
@@ -239,7 +239,7 @@ fun SwipeableCard(
             .graphicsLayer {
                 rotationZ = rotation
             }
-            .pointerInput(option.id) {
+            .pointerInput(choice.id) {
                 detectDragGestures(
                     onDragEnd = {
                         coroutineScope.launch {
@@ -270,10 +270,10 @@ fun SwipeableCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Option Image
+            // Choice Image
             AsyncImage(
-                model = option.imageUrl,
-                contentDescription = option.name,
+                model = choice.imageUrl,
+                contentDescription = choice.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .weight(1f)
@@ -288,7 +288,7 @@ fun SwipeableCard(
                     .padding(20.dp)
             ) {
                 Text(
-                    text = option.name,
+                    text = choice.name,
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 22.sp
@@ -298,7 +298,7 @@ fun SwipeableCard(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = option.details,
+                    text = choice.details,
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     ),
