@@ -22,7 +22,7 @@ class RoomRepositoryImpl @Inject constructor(
     private val userPreferencesDataSource: UserPreferencesDataSource
 ) : RoomRepository {
 
-    private val db = FirebaseDatabase.getInstance()
+    private val db = FirebaseDatabase.getInstance("https://napsak-official-default-rtdb.europe-west1.firebasedatabase.app")
     private val roomsRef = db.getReference("rooms")
 
     private fun DataSnapshot.toRoom(): Room? {
