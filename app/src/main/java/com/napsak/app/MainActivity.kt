@@ -8,8 +8,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
 import com.napsak.app.ui.navigation.NapsakNavGraph
+import com.napsak.app.ui.screens.shared.SharedSessionViewModel
 import com.napsak.app.ui.theme.NAPSAKTheme
 
 import dagger.hilt.android.AndroidEntryPoint
@@ -22,9 +24,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             NAPSAKTheme {
                 val navController = rememberNavController()
+                val sharedViewModel: SharedSessionViewModel = hiltViewModel()
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     NapsakNavGraph(
                         navController = navController,
+                        sharedViewModel = sharedViewModel,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

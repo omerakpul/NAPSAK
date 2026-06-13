@@ -10,6 +10,8 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,24 +25,28 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.napsak.app.domain.model.Choice
+import com.napsak.app.ui.screens.shared.SharedSessionViewModel
 import com.napsak.app.ui.theme.CoralPrimary
 import com.napsak.app.ui.theme.CoralPrimaryDark
 
 @Composable
 fun ResultScreen(
     roomId: String,
+    sharedViewModel: SharedSessionViewModel,
     onNavigateToHome: () -> Unit
 ) {
     val context = LocalContext.current
+    val winnerChoice by sharedViewModel.winnerChoice.collectAsState()
 
-    // Mock winning choice (will be calculated dynamically in Step 2/5)
-    val winnerChoice = Choice(
-        id = "1",
-        name = "Akali Burger",
-        details = "İstanbul'un en iyi el yapımı gurme hamburgerleri. Nefis soslar ve sulu dana köftesiyle unutulmaz bir lezzet deneyimi.",
-        imageUrl = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500",
-        voteCount = 4
-    )
+    // If no winner is set, show a fallback
+    if (winnerChoice == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = CoralPrimary)
+        }
+        return
+    }
+
+    val winner = winnerChoice!!
 
     val gradient = Brush.horizontalGradient(
         colors = listOf(CoralPrimary, CoralPrimaryDark)
@@ -100,8 +106,8 @@ fun ResultScreen(
                     Column(modifier = Modifier.fillMaxSize()) {
                         // Image
                         AsyncImage(
-                            model = winnerChoice.imageUrl,
-                            contentDescription = winnerChoice.name,
+                            model = winner.imageUrl,
+                            contentDescription = winner.name,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .weight(1f)
@@ -121,7 +127,7 @@ fun ResultScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = winnerChoice.name,
+                                    text = winner.name,
                                     style = MaterialTheme.typography.titleLarge.copy(
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 24.sp
@@ -133,7 +139,7 @@ fun ResultScreen(
                                     onClick = {},
                                     label = {
                                         Text(
-                                            text = "${winnerChoice.voteCount} Oy",
+                                            text = "${winner.voteCount} Oy",
                                             fontWeight = FontWeight.Bold,
                                             color = CoralPrimary
                                         )
@@ -145,7 +151,7 @@ fun ResultScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = winnerChoice.details,
+                                text = winner.details,
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                 )
@@ -165,7 +171,7 @@ fun ResultScreen(
                 // Open in Maps Button
                 Button(
                     onClick = {
-                        val gmmIntentUri = Uri.parse("geo:0,0?q=${Uri.encode(winnerChoice.name)}")
+                        val gmmIntentUri = Uri.parse("geo:0,0?q=${Uri.encode(winner.name)}")
                         val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
                             setPackage("com.google.android.apps.maps")
                         }
@@ -173,7 +179,7 @@ fun ResultScreen(
                             context.startActivity(mapIntent)
                         } else {
                             // Fallback to web browser search
-                            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(winnerChoice.name)}"))
+                            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(winner.name)}"))
                             context.startActivity(webIntent)
                         }
                     },

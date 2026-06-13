@@ -29,16 +29,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.napsak.app.domain.model.Choice
+import com.napsak.app.ui.screens.shared.SharedSessionViewModel
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
 fun VotingScreen(
     roomId: String,
+    sharedViewModel: SharedSessionViewModel,
     onNavigateToResult: (String) -> Unit
 ) {
-    // TODO: Receive choices from CreateChoicesScreen via shared ViewModel or navigation args
-    val choices = remember { mutableStateListOf<Choice>() }
+    val allChoices by sharedViewModel.choices.collectAsState()
+    val choices = remember(allChoices) { allChoices.toList() }
+
+    // Track liked choices
+    val likedChoices = remember { mutableStateListOf<Choice>() }
 
     var currentIndex by remember { mutableIntStateOf(0) }
     val currentChoice = choices.getOrNull(currentIndex)
@@ -88,13 +93,16 @@ fun VotingScreen(
                     SwipeableCard(
                         choice = currentChoice,
                         onSwipeLeft = {
+                            // Dislike - just skip
                             currentIndex++
                         },
                         onSwipeRight = {
+                            // Like - add to liked list
+                            likedChoices.add(currentChoice)
                             currentIndex++
                         }
                     )
-                } else {
+                } else if (choices.isNotEmpty()) {
                     // Voting Finished state
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -102,7 +110,12 @@ fun VotingScreen(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         Text(
-                            text = "Harika! Oylamayı bitirdin.",
+                            text = "🎉",
+                            fontSize = 48.sp
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Oylamayı bitirdin!",
                             style = MaterialTheme.typography.headlineSmall.copy(
                                 fontWeight = FontWeight.Bold
                             ),
@@ -110,7 +123,7 @@ fun VotingScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Diğer arkadaşların da oylamayı bitirdiğinde sonuçlar açıklanacak.",
+                            text = "${likedChoices.size} / ${choices.size} seçeneği beğendin.",
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                             ),
@@ -119,7 +132,16 @@ fun VotingScreen(
                         )
                         Spacer(modifier = Modifier.height(24.dp))
                         Button(
-                            onClick = { onNavigateToResult(roomId) },
+                            onClick = {
+                                // Pick winner: random from liked, or random from all if none liked
+                                val winner = if (likedChoices.isNotEmpty()) {
+                                    likedChoices.random()
+                                } else {
+                                    choices.random()
+                                }
+                                sharedViewModel.setWinner(winner.copy(voteCount = likedChoices.size))
+                                onNavigateToResult(roomId)
+                            },
                             shape = RoundedCornerShape(14.dp)
                         ) {
                             Text("Sonuçları Gör")
@@ -140,6 +162,7 @@ fun VotingScreen(
                     // Dislike Button (Cross)
                     IconButton(
                         onClick = {
+                            // Dislike - just skip
                             currentIndex++
                         },
                         modifier = Modifier
@@ -160,6 +183,8 @@ fun VotingScreen(
                     // Like Button (Heart)
                     IconButton(
                         onClick = {
+                            // Like - add to liked list
+                            currentChoice?.let { likedChoices.add(it) }
                             currentIndex++
                         },
                         modifier = Modifier
