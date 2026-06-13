@@ -22,7 +22,9 @@ data class Choice(
     val name: String = "",
     val details: String = "",
     val imageUrl: String? = null,
-    val voteCount: Int = 0
+    val voteCount: Int = 0,
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )
 
 @Serializable

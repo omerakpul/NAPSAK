@@ -168,21 +168,60 @@ fun ResultScreen(
                     .padding(bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Open in Maps Button
+                // Open in Maps Button (Only show if location is available)
+                if (winner.latitude != null && winner.longitude != null) {
+                    Button(
+                        onClick = {
+                            val gmmIntentUri = Uri.parse("geo:${winner.latitude},${winner.longitude}?q=${Uri.encode(winner.name)}")
+                            val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
+                                setPackage("com.google.android.apps.maps")
+                            }
+                            if (mapIntent.resolveActivity(context.packageManager) != null) {
+                                context.startActivity(mapIntent)
+                            } else {
+                                // Fallback to web browser search
+                                val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/search/?api=1&query=${winner.latitude},${winner.longitude}"))
+                                context.startActivity(webIntent)
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        contentPadding = PaddingValues()
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(gradient, shape = RoundedCornerShape(16.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Place,
+                                    contentDescription = "Maps",
+                                    tint = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Haritada Aç",
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Back to Home Button
                 Button(
-                    onClick = {
-                        val gmmIntentUri = Uri.parse("geo:0,0?q=${Uri.encode(winner.name)}")
-                        val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
-                            setPackage("com.google.android.apps.maps")
-                        }
-                        if (mapIntent.resolveActivity(context.packageManager) != null) {
-                            context.startActivity(mapIntent)
-                        } else {
-                            // Fallback to web browser search
-                            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(winner.name)}"))
-                            context.startActivity(webIntent)
-                        }
-                    },
+                    onClick = onNavigateToHome,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -201,13 +240,13 @@ fun ResultScreen(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Place,
-                                contentDescription = "Maps",
+                                imageVector = Icons.Default.Home,
+                                contentDescription = "Home",
                                 tint = Color.White
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Haritada Aç",
+                                text = "Ana Sayfaya Dön",
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
@@ -215,24 +254,6 @@ fun ResultScreen(
                             )
                         }
                     }
-                }
-
-                // Back to Home Button
-                OutlinedButton(
-                    onClick = onNavigateToHome,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(imageVector = Icons.Default.Home, contentDescription = "Home")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Ana Sayfaya Dön",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
                 }
             }
         }
