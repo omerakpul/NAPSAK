@@ -37,41 +37,8 @@ fun VotingScreen(
     roomId: String,
     onNavigateToResult: (String) -> Unit
 ) {
-    // Mock restaurant list for oylama (voting) session
-    val choices = remember {
-        mutableStateListOf(
-            Choice(
-                id = "1",
-                name = "Akali Burger",
-                details = "İstanbul'un en iyi el yapımı gurme hamburgerleri.",
-                imageUrl = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500"
-            ),
-            Choice(
-                id = "2",
-                name = "Pizzeria Pera",
-                details = "Odun ateşinde pişen gerçek çıtır Napoli pizzası.",
-                imageUrl = "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500"
-            ),
-            Choice(
-                id = "3",
-                name = "Kebapçı Emin",
-                details = "Zırh kıymasından közlenmiş biberli enfes Adana kebabı.",
-                imageUrl = "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500"
-            ),
-            Choice(
-                id = "4",
-                name = "Sushico",
-                details = "Taze malzemelerle hazırlanan Uzak Doğu sushi tabakları.",
-                imageUrl = "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500"
-            ),
-            Choice(
-                id = "5",
-                name = "Green Salads",
-                details = "Doyurucu ve sağlıklı taze zeytinyağlı salata çeşitleri.",
-                imageUrl = "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500"
-            )
-        )
-    }
+    // TODO: Receive choices from CreateChoicesScreen via shared ViewModel or navigation args
+    val choices = remember { mutableStateListOf<Choice>() }
 
     var currentIndex by remember { mutableIntStateOf(0) }
     val currentChoice = choices.getOrNull(currentIndex)

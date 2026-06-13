@@ -6,6 +6,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import com.napsak.app.ui.screens.createchoices.CreateChoicesScreen
 import com.napsak.app.ui.screens.home.HomeScreen
 import com.napsak.app.ui.screens.lobby.LobbyScreen
 import com.napsak.app.ui.screens.voting.VotingScreen
@@ -32,7 +33,18 @@ fun NapsakNavGraph(
             val lobby = backStackEntry.toRoute<Screen.Lobby>()
             LobbyScreen(
                 roomId = lobby.roomId,
-                onNavigateToVoting = { roomId ->
+                onNavigateToCreateChoices = { roomId ->
+                    navController.navigate(Screen.CreateChoices(roomId)) {
+                        popUpTo(Screen.Home) { saveState = true }
+                    }
+                }
+            )
+        }
+        composable<Screen.CreateChoices> { backStackEntry ->
+            val createChoices = backStackEntry.toRoute<Screen.CreateChoices>()
+            CreateChoicesScreen(
+                roomId = createChoices.roomId,
+                onNavigateToVoting = { roomId, _ ->
                     navController.navigate(Screen.Voting(roomId)) {
                         popUpTo(Screen.Home) { saveState = true }
                     }
@@ -63,3 +75,4 @@ fun NapsakNavGraph(
         }
     }
 }
+

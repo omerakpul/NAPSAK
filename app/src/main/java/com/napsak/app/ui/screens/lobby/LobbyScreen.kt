@@ -27,7 +27,7 @@ import com.napsak.app.ui.theme.CoralPrimary
 @Composable
 fun LobbyScreen(
     roomId: String,
-    onNavigateToVoting: (String) -> Unit,
+    onNavigateToCreateChoices: (String) -> Unit,
     viewModel: LobbyViewModel = hiltViewModel()
 ) {
     val roomState by viewModel.room.collectAsState()
@@ -41,7 +41,7 @@ fun LobbyScreen(
     // Auto-navigate all participants when host starts voting
     LaunchedEffect(roomState?.state) {
         if (roomState?.state == RoomState.VOTING) {
-            onNavigateToVoting(roomId)
+            onNavigateToCreateChoices(roomId)
         }
     }
 
