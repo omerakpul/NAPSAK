@@ -98,7 +98,9 @@ fun VotingScreen(
                         },
                         onSwipeRight = {
                             // Like - add to liked list
-                            likedChoices.add(currentChoice)
+                            if (!likedChoices.contains(currentChoice)) {
+                                likedChoices.add(currentChoice)
+                            }
                             currentIndex++
                         }
                     )
@@ -184,7 +186,11 @@ fun VotingScreen(
                     IconButton(
                         onClick = {
                             // Like - add to liked list
-                            currentChoice?.let { likedChoices.add(it) }
+                            currentChoice?.let { choice ->
+                                if (!likedChoices.contains(choice)) {
+                                    likedChoices.add(choice)
+                                }
+                            }
                             currentIndex++
                         },
                         modifier = Modifier
@@ -220,7 +226,8 @@ fun SwipeableCard(
     
     val swipeThreshold = screenWidth * 0.4f
 
-    val offsetX = remember { Animatable(0f) }
+    var isSwiped by remember(choice.id) { mutableStateOf(false) }
+    val offsetX = remember(choice.id) { Animatable(0f) }
     val rotation = offsetX.value / screenWidth * 25f
 
     Card(
@@ -234,12 +241,15 @@ fun SwipeableCard(
             .pointerInput(choice.id) {
                 detectDragGestures(
                     onDragEnd = {
+                        if (isSwiped) return@detectDragGestures
                         coroutineScope.launch {
                             if (offsetX.value > swipeThreshold) {
+                                isSwiped = true
                                 // Swipe Right
                                 offsetX.animateTo(screenWidth, animationSpec = tween(300))
                                 onSwipeRight()
                             } else if (offsetX.value < -swipeThreshold) {
+                                isSwiped = true
                                 // Swipe Left
                                 offsetX.animateTo(-screenWidth, animationSpec = tween(300))
                                 onSwipeLeft()
@@ -250,6 +260,7 @@ fun SwipeableCard(
                         }
                     },
                     onDrag = { change, dragAmount ->
+                        if (isSwiped) return@detectDragGestures
                         change.consume()
                         coroutineScope.launch {
                             offsetX.snapTo(offsetX.value + dragAmount.x)
