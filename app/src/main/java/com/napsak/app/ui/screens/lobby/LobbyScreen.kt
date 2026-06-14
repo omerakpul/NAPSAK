@@ -23,6 +23,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.napsak.app.domain.model.RoomState
 import com.napsak.app.ui.theme.AmberSecondary
 import com.napsak.app.ui.theme.CoralPrimary
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
 
 import com.napsak.app.ui.screens.shared.SharedSessionViewModel
 
@@ -36,6 +39,7 @@ fun LobbyScreen(
 ) {
     val roomState by viewModel.room.collectAsState()
     val currentUserId by viewModel.currentUserId.collectAsState()
+    val context = LocalContext.current
 
     // Start observing room updates when screen opens
     LaunchedEffect(roomId) {
@@ -119,12 +123,56 @@ fun LobbyScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedButton(
-                        onClick = { /* Handle share */ },
+                        onClick = {
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_TEXT, "N'APSAK? Odamıza katıl! Oda Kodu: $roomId")
+                                type = "text/plain"
+                            }
+                            val shareIntent = Intent.createChooser(sendIntent, null)
+                            context.startActivity(shareIntent)
+                        },
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(imageVector = Icons.Default.Share, contentDescription = "Paylaş")
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Kodu Arkadaşlarınla Paylaş")
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                        thickness = 1.dp
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text(
+                        text = "Veya QR Kodu Taratın",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        )
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Card(
+                        modifier = Modifier.size(140.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize().padding(8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AsyncImage(
+                                model = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=$roomId",
+                                contentDescription = "QR Code",
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     }
                 }
             }

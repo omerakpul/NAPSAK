@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N'APSAK? - Birlikte Karar Verin</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
+    <!-- Canvas Confetti for Celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Background Gradients -->
+        <div class="bg-glow bg-glow-1"></div>
+        <div class="bg-glow bg-glow-2"></div>
+        
+        <!-- Screen 1: Join Room -->
+        <section id="screen-join" class="screen active">
+            <div class="brand">
+                <span class="logo-emoji">🍔</span>
+                <h1 class="logo-text">N'APSAK?</h1>
+                <p class="brand-tagline">Arkadaşlarınla ne yapacağına anında karar ver!</p>
+            </div>
+            
+            <div class="card glass">
+                <h2>Odaya Katıl</h2>
+                <div class="input-group">
+                    <label for="input-name"><i class="fa-solid fa-user"></i> Adın</label>
+                    <input type="text" id="input-name" placeholder="Örn: Ahmet" autocomplete="off" maxlength="15">
+                </div>
+                
+                <div class="input-group">
+                    <label for="input-room"><i class="fa-solid fa-key"></i> Oda Kodu</label>
+                    <input type="tel" id="input-room" placeholder="6 Haneli Kod" autocomplete="off" maxlength="6">
+                </div>
+                
+                <button id="btn-join" class="btn-primary">Katıl <i class="fa-solid fa-right-to-bracket"></i></button>
+            </div>
+        </section>
+
+        <!-- Screen 2: Lobby -->
+        <section id="screen-lobby" class="screen">
+            <div class="header">
+                <span class="badge">Bekleme Lobisi</span>
+                <h1 id="lobby-room-code">Oda: ------</h1>
+            </div>
+            
+            <div class="card glass">
+                <div class="participants-header">
+                    <h3>Katılımcılar (<span id="participant-count">0</span>)</h3>
+                    <span id="ready-ratio" class="ready-ratio">Hazır: 0/0</span>
+                </div>
+                <div id="participants-list" class="list-container">
+                    <!-- Dynamic participants list will go here -->
+                </div>
+            </div>
+            
+            <div class="action-footer">
+                <button id="btn-ready" class="btn-secondary">Hazır Durumuna Geç <i class="fa-solid fa-circle-check"></i></button>
+                <p class="waiting-message"><i class="fa-solid fa-spinner fa-spin"></i> Oda sahibinin oylamayı başlatması bekleniyor...</p>
+            </div>
+        </section>
+
+        <!-- Screen 3: Voting (Tinder Swipe) -->
+        <section id="screen-voting" class="screen">
+            <div class="header">
+                <span class="badge">Oylama Başladı</span>
+                <div class="progress-bar-container">
+                    <div id="voting-progress" class="progress-text">0 / 0</div>
+                    <div class="progress-track">
+                        <div id="progress-fill" class="progress-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cards stack container -->
+            <div id="card-container" class="card-container">
+                <!-- Swipeable cards will be injected dynamically -->
+            </div>
+            
+            <!-- Fallback indicator when all cards are swiped -->
+            <div id="voting-finished-placeholder" class="voting-finished-card glass hidden">
+                <div class="finished-content">
+                    <span class="finished-emoji">🎉</span>
+                    <h2>Oylamayı Bitirdin!</h2>
+                    <p>Oyların kaydedildi. Diğer katılımcıların oylamayı tamamlaması ve host'un sonuçları açıklaması bekleniyor...</p>
+                    <div class="loader-ring"></div>
+                </div>
+            </div>
+            
+            <!-- Action buttons underneath cards -->
+            <div id="voting-actions" class="voting-actions">
+                <button id="btn-dislike" class="action-btn btn-dislike" title="Pas Geç"><i class="fa-solid fa-xmark"></i></button>
+                <button id="btn-like" class="action-btn btn-like" title="Beğen"><i class="fa-solid fa-heart"></i></button>
+            </div>
+        </section>
+
+        <!-- Screen 4: Result -->
+        <section id="screen-result" class="screen">
+            <div class="header">
+                <span class="badge success">Karar Verildi!</span>
+                <h1>Kazanan Seçenek</h1>
+            </div>
+            
+            <div class="winner-card glass">
+                <div class="winner-image-container">
+                    <img id="winner-image" src="" alt="Kazanan Resim" onerror="this.src='https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&auto=format&fit=crop&q=60'">
+                    <div class="winner-votes-badge"><i class="fa-solid fa-fire"></i> <span id="winner-votes">0</span> Oy</div>
+                </div>
+                <div class="winner-info">
+                    <h2 id="winner-name">Restoran Adı</h2>
+                    <p id="winner-details">Açıklama ve detaylar buraya gelecek.</p>
+                </div>
+            </div>
+            
+            <div class="action-footer">
+                <a id="btn-maps" class="btn-primary maps-link" target="_blank"><i class="fa-solid fa-map-location-dot"></i> Haritada Aç</a>
+                <button id="btn-reset" class="btn-text">Ana Sayfaya Dön</button>
+            </div>
+        </section>
+    </div>
+    
+    <!-- Application Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
