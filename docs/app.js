@@ -123,6 +123,11 @@ btnJoin.addEventListener("click", () => {
                 name: userName,
                 ready: false
             }).then(() => {
+                // Remove participant automatically on disconnect to avoid blocking voting if they leave
+                participantRef.onDisconnect().remove().catch(err => {
+                    console.warn("onDisconnect register failed:", err);
+                });
+                
                 // Success: Start observing room in real-time
                 observeRoom();
             });
@@ -388,9 +393,15 @@ function initCardDrag(card) {
     const maxRotation = 16; // maximum rotation in degrees
     const swipeThreshold = 100; // swipe threshold in pixels
 
-    // Touch and pointer events support
+    // Pointer Events
     card.addEventListener("pointerdown", onPointerDown);
     card.addEventListener("pointercancel", onPointerCancel);
+    
+    // Touch Events (explicit mobile support)
+    card.addEventListener("touchstart", onTouchStart, { passive: true });
+    card.addEventListener("touchmove", onTouchMove, { passive: false });
+    card.addEventListener("touchend", onTouchEnd);
+    card.addEventListener("touchcancel", onTouchCancel);
     
     function onPointerDown(e) {
         if (e.button !== 0 && e.pointerType === 'mouse') return;
@@ -413,27 +424,82 @@ function initCardDrag(card) {
     
     function onPointerMove(e) {
         if (!isDragging) return;
-        
         currentX = e.clientX - startX;
         currentY = e.clientY - startY;
-        
-        const rot = (currentX / swipeThreshold) * maxRotation;
+        updateCardTransform(currentX, currentY);
+    }
+    
+    function onPointerUp(e) {
+        if (!isDragging) return;
+        cleanupPointerDrag(e.pointerId);
+        evaluateSwipe();
+    }
+    
+    function onPointerCancel(e) {
+        if (!isDragging) return;
+        cleanupPointerDrag(e.pointerId);
+        resetCardPosition();
+    }
+    
+    function cleanupPointerDrag(pointerId) {
+        isDragging = false;
+        card.classList.remove("dragging");
+        document.removeEventListener("pointermove", onPointerMove);
+        document.removeEventListener("pointerup", onPointerUp);
+        document.removeEventListener("pointercancel", onPointerCancel);
+        try {
+            card.releasePointerCapture(pointerId);
+        } catch (err) {}
+    }
+    
+    function onTouchStart(e) {
+        if (e.touches.length > 1) return;
+        const touch = e.touches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
+        isDragging = true;
+        card.classList.add("dragging");
+    }
+    
+    function onTouchMove(e) {
+        if (!isDragging) return;
+        e.preventDefault(); // prevent scroll
+        const touch = e.touches[0];
+        currentX = touch.clientX - startX;
+        currentY = touch.clientY - startY;
+        updateCardTransform(currentX, currentY);
+    }
+    
+    function onTouchEnd(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        card.classList.remove("dragging");
+        evaluateSwipe();
+    }
+    
+    function onTouchCancel(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        card.classList.remove("dragging");
+        resetCardPosition();
+    }
+    
+    function updateCardTransform(x, y) {
+        const rot = (x / swipeThreshold) * maxRotation;
         const boundedRot = Math.min(Math.max(rot, -maxRotation), maxRotation);
         
-        // Move card
-        card.style.transform = `translate(${currentX}px, ${currentY}px) rotate(${boundedRot}deg)`;
+        card.style.transform = `translate(${x}px, ${y}px) rotate(${boundedRot}deg)`;
         
-        // Show badges
         const likeBadge = card.querySelector(".card-badge.like");
         const dislikeBadge = card.querySelector(".card-badge.dislike");
         
-        if (currentX > 15) {
-            if (likeBadge) likeBadge.style.opacity = Math.min((currentX - 15) / 50, 1);
+        if (x > 15) {
+            if (likeBadge) likeBadge.style.opacity = Math.min((x - 15) / 50, 1);
             if (dislikeBadge) dislikeBadge.style.opacity = 0;
             card.classList.add("swiping-right");
             card.classList.remove("swiping-left");
-        } else if (currentX < -15) {
-            if (dislikeBadge) dislikeBadge.style.opacity = Math.min((-currentX - 15) / 50, 1);
+        } else if (x < -15) {
+            if (dislikeBadge) dislikeBadge.style.opacity = Math.min((-x - 15) / 50, 1);
             if (likeBadge) likeBadge.style.opacity = 0;
             card.classList.add("swiping-left");
             card.classList.remove("swiping-right");
@@ -444,11 +510,7 @@ function initCardDrag(card) {
         }
     }
     
-    function onPointerUp(e) {
-        if (!isDragging) return;
-        cleanupDrag(e.pointerId);
-        
-        // Evaluate swipe
+    function evaluateSwipe() {
         if (currentX > swipeThreshold) {
             swipeCardAction(card, "right", currentY);
         } else if (currentX < -swipeThreshold) {
@@ -456,23 +518,6 @@ function initCardDrag(card) {
         } else {
             resetCardPosition();
         }
-    }
-    
-    function onPointerCancel(e) {
-        if (!isDragging) return;
-        cleanupDrag(e.pointerId);
-        resetCardPosition();
-    }
-    
-    function cleanupDrag(pointerId) {
-        isDragging = false;
-        card.classList.remove("dragging");
-        document.removeEventListener("pointermove", onPointerMove);
-        document.removeEventListener("pointerup", onPointerUp);
-        document.removeEventListener("pointercancel", onPointerCancel);
-        try {
-            card.releasePointerCapture(pointerId);
-        } catch (err) {}
     }
     
     function resetCardPosition() {
@@ -639,3 +684,42 @@ function playConfetti() {
 btnReset.addEventListener("click", () => {
     window.location.href = window.location.pathname; // Reload without query params
 });
+
+// Global error catcher for debugging on mobile client
+window.addEventListener("error", (e) => {
+    showDebugToast(`Hata: ${e.message} at ${e.filename}:${e.lineno}`);
+});
+window.addEventListener("unhandledrejection", (e) => {
+    showDebugToast(`Promise Hatası: ${e.reason}`);
+});
+
+function showDebugToast(message) {
+    console.error(message);
+    let toast = document.getElementById("debug-toast");
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "debug-toast";
+        toast.style.position = "fixed";
+        toast.style.bottom = "12px";
+        toast.style.left = "12px";
+        toast.style.right = "12px";
+        toast.style.background = "rgba(255, 75, 75, 0.95)";
+        toast.style.color = "white";
+        toast.style.padding = "12px 16px";
+        toast.style.borderRadius = "12px";
+        toast.style.fontSize = "13px";
+        toast.style.zIndex = "99999";
+        toast.style.wordBreak = "break-all";
+        toast.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
+        toast.style.fontFamily = "monospace";
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    
+    // Auto remove after 8 seconds
+    setTimeout(() => {
+        if (toast && toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 8000);
+}

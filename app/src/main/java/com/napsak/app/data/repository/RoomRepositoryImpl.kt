@@ -78,6 +78,7 @@ class RoomRepositoryImpl @Inject constructor(
         
         roomsRef.child(roomId).setValue(newRoom)
             .addOnSuccessListener {
+                roomsRef.child(roomId).child("participants").child(userId).onDisconnect().removeValue()
                 trySend(Result.success(newRoom))
                 close()
             }
@@ -107,6 +108,7 @@ class RoomRepositoryImpl @Inject constructor(
                     
                     roomRef.setValue(updatedRoom)
                         .addOnSuccessListener {
+                            roomsRef.child(roomId).child("participants").child(userId).onDisconnect().removeValue()
                             trySend(Result.success(updatedRoom))
                             close()
                         }
