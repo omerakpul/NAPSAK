@@ -340,54 +340,52 @@ function updateVotingProgress() {
     progressFill.style.width = percent + "%";
 }
 
-// Render Tinder Card Stack
+// Render Tinder Card Stack (renders only the current card to match native Android layout)
 function renderCardsStack() {
     cardContainer.innerHTML = "";
     
-    // Render starting from current index
-    for (let i = currentCardIndex; i < choicesList.length; i++) {
-        const choice = choicesList[i];
-        const card = document.createElement("div");
-        card.dataset.index = i;
-        card.dataset.id = choice.id;
-        
-        // Stack index styling (visual hierarchy)
-        card.style.zIndex = choicesList.length - i;
-        
-        const hasImage = choice.imageUrl && choice.imageUrl.trim() !== "" && choice.imageUrl !== "null" && choice.imageUrl !== "undefined";
-        
-        if (hasImage) {
-            card.className = "swipe-card";
-            card.innerHTML = `
-                <div class="card-badge like">EVET</div>
-                <div class="card-badge dislike">HAYIR</div>
-                <div class="card-img-container">
-                    <img src="${choice.imageUrl}" alt="${choice.name}" draggable="false">
-                </div>
-                <div class="card-info">
-                    <h2>${choice.name}</h2>
-                    <p>${choice.details || "Açıklama bulunmuyor."}</p>
-                </div>
-            `;
-        } else {
-            card.className = "swipe-card no-image";
-            card.innerHTML = `
-                <div class="card-badge like">EVET</div>
-                <div class="card-badge dislike">HAYIR</div>
-                <div class="card-info centered">
-                    <h2>${choice.name}</h2>
-                    <p>${choice.details || "Açıklama bulunmuyor."}</p>
-                </div>
-            `;
-        }
-        
-        cardContainer.appendChild(card);
-        
-        // Add Swipe Drag Physics only to the top card
-        if (i === currentCardIndex) {
-            initCardDrag(card);
-        }
+    if (currentCardIndex >= choicesList.length) {
+        showVotingFinished();
+        return;
     }
+    
+    const choice = choicesList[currentCardIndex];
+    if (!choice) return;
+    
+    const card = document.createElement("div");
+    card.dataset.index = currentCardIndex;
+    card.dataset.id = choice.id;
+    card.style.zIndex = 1;
+    
+    const hasImage = choice.imageUrl && choice.imageUrl.trim() !== "" && choice.imageUrl !== "null" && choice.imageUrl !== "undefined";
+    
+    if (hasImage) {
+        card.className = "swipe-card";
+        card.innerHTML = `
+            <div class="card-badge like">EVET</div>
+            <div class="card-badge dislike">HAYIR</div>
+            <div class="card-img-container">
+                <img src="${choice.imageUrl}" alt="${choice.name}" draggable="false">
+            </div>
+            <div class="card-info">
+                <h2>${choice.name}</h2>
+                <p>${choice.details || "Açıklama bulunmuyor."}</p>
+            </div>
+        `;
+    } else {
+        card.className = "swipe-card no-image";
+        card.innerHTML = `
+            <div class="card-badge like">EVET</div>
+            <div class="card-badge dislike">HAYIR</div>
+            <div class="card-info centered">
+                <h2>${choice.name}</h2>
+                <p>${choice.details || "Açıklama bulunmuyor."}</p>
+            </div>
+        `;
+    }
+    
+    cardContainer.appendChild(card);
+    initCardDrag(card);
 }
 
 // Tinder Swipe Physics (Drag interactions)
