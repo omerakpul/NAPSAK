@@ -12,6 +12,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,16 +41,56 @@ fun ResultScreen(
 ) {
     val context = LocalContext.current
     val winnerChoice by sharedViewModel.winnerChoice.collectAsState()
+    val currentRoom by sharedViewModel.currentRoom.collectAsState()
 
-    // If no winner is set, show a fallback
-    if (winnerChoice == null) {
+    val choices = currentRoom?.choices?.values?.toList() ?: emptyList()
+    val maxVotes = choices.maxOfOrNull { it.voteCount } ?: 0
+    val candidates = if (maxVotes > 0) {
+        choices.filter { it.voteCount == maxVotes }
+    } else {
+        choices
+    }
+    val isTie = candidates.size > 1
+
+    var isRaffleActive by remember { mutableStateOf(isTie) }
+    var displayedChoice by remember { mutableStateOf<Choice?>(null) }
+
+    LaunchedEffect(isTie, candidates, winnerChoice) {
+        if (isTie && candidates.isNotEmpty() && winnerChoice != null) {
+            isRaffleActive = true
+            val animationSteps = listOf(
+                50L, 50L, 60L, 60L, 70L, 80L, 90L, 100L, 120L, 140L, 170L, 200L, 240L, 300L, 380L, 480L, 600L
+            )
+            var lastIndex = -1
+            for (delayTime in animationSteps) {
+                var nextIndex = (0 until candidates.size).random()
+                if (candidates.size > 1) {
+                    while (nextIndex == lastIndex) {
+                        nextIndex = (0 until candidates.size).random()
+                    }
+                }
+                lastIndex = nextIndex
+                displayedChoice = candidates[nextIndex]
+                kotlinx.coroutines.delay(delayTime)
+            }
+            displayedChoice = winnerChoice
+            kotlinx.coroutines.delay(1000L)
+            isRaffleActive = false
+        } else {
+            displayedChoice = winnerChoice
+            isRaffleActive = false
+        }
+    }
+
+    // If no winner is set or raffle hasn't initialized displayedChoice, show fallback
+    if (winnerChoice == null || (isTie && displayedChoice == null)) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = CoralPrimary)
         }
         return
     }
 
-    val winner = winnerChoice!!
+    val winner = displayedChoice ?: winnerChoice!!
 
     val gradient = Brush.horizontalGradient(
         colors = listOf(CoralPrimary, CoralPrimaryDark)
@@ -72,7 +116,7 @@ fun ResultScreen(
 
                 // Celebratory Header
                 Text(
-                    text = "🎉 KAZANAN SEÇENEK 🎉",
+                    text = if (isRaffleActive) "🎲 KURA ÇEKİLİYOR... 🎲" else "🎉 KAZANAN SEÇENEK 🎉",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
@@ -83,7 +127,7 @@ fun ResultScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Grup kararını verdi! Bu akşam buradayız:",
+                    text = if (isRaffleActive) "Eşitlik durumunda kura çekiliyor:" else "Grup kararını verdi! Bu akşam buradayız:",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                     ),
@@ -139,7 +183,7 @@ fun ResultScreen(
                                     onClick = {},
                                     label = {
                                         Text(
-                                            text = "${winner.voteCount} Oy",
+                                            text = if (isRaffleActive) "? Oy" else "${winner.voteCount} Oy",
                                             fontWeight = FontWeight.Bold,
                                             color = CoralPrimary
                                         )
@@ -151,7 +195,7 @@ fun ResultScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = winner.details,
+                                text = if (isRaffleActive) "Kura çekimi yapılıyor..." else winner.details,
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                 )
@@ -168,8 +212,8 @@ fun ResultScreen(
                     .padding(bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Open in Maps Button (Only show if location is available)
-                if (winner.latitude != null && winner.longitude != null) {
+                // Open in Maps Button (Only show if location is available and raffle finished)
+                if (!isRaffleActive && winner.latitude != null && winner.longitude != null) {
                     Button(
                         onClick = {
                             val gmmIntentUri = Uri.parse("geo:${winner.latitude},${winner.longitude}?q=${Uri.encode(winner.name)}")
@@ -220,45 +264,52 @@ fun ResultScreen(
                 }
 
                 // Back to Home Button
-                Button(
-                    onClick = {
-                        val currentRoomVal = sharedViewModel.currentRoom.value
-                        val isHost = currentRoomVal?.hostId == sharedViewModel.currentUserId.value
-                        if (isHost) {
-                            sharedViewModel.deleteRoom(roomId)
-                        }
-                        onNavigateToHome()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    contentPadding = PaddingValues()
-                ) {
-                    Box(
+                if (!isRaffleActive) {
+                    Button(
+                        onClick = {
+                            val currentRoomVal = sharedViewModel.currentRoom.value
+                            val isHost = currentRoomVal?.hostId == sharedViewModel.currentUserId.value
+                            if (isHost) {
+                                sharedViewModel.deleteRoom(roomId)
+                            }
+                            onNavigateToHome()
+                        },
                         modifier = Modifier
-                            .fillMaxSize()
-                            .background(gradient, shape = RoundedCornerShape(16.dp)),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        contentPadding = PaddingValues()
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(Color.Gray.copy(alpha = 0.2f), Color.Gray.copy(alpha = 0.1f))
+                                    ),
+                                    shape = RoundedCornerShape(16.dp)
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Home,
-                                contentDescription = "Home",
-                                tint = Color.White
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Ana Sayfaya Dön",
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Home,
+                                    contentDescription = "Home",
+                                    tint = Color.White
                                 )
-                            )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Ana Sayfaya Dön",
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                )
+                            }
                         }
                     }
                 }

@@ -60,6 +60,9 @@ const btnReset = document.getElementById("btn-reset");
 const winnerImageContainer = document.getElementById("winner-image-container");
 const winnerInfo = document.querySelector(".winner-info");
 const winnerCard = document.querySelector(".winner-card");
+const resultBadge = document.getElementById("result-badge");
+const resultTitle = document.getElementById("result-title");
+let raffleCompleted = false;
 
 // XSS Protection: Escape user-provided strings before inserting into HTML
 function escapeHTML(str) {
@@ -710,6 +713,70 @@ function showResultScreen() {
 
     const winner = roomData.choices[winnerChoiceId];
     
+    // Check if there is a tie to show a raffle animation
+    const choices = Object.values(roomData.choices || {});
+    const maxVotes = choices.length > 0 ? Math.max(...choices.map(c => c.voteCount || 0)) : 0;
+    const candidates = maxVotes > 0 
+        ? choices.filter(c => c.voteCount === maxVotes)
+        : choices;
+    const isTie = candidates.length > 1;
+
+    if (isTie && !raffleCompleted) {
+        raffleCompleted = true;
+        
+        // Show raffle header state
+        resultBadge.className = "badge warning";
+        resultBadge.innerHTML = 'Kura Çekiliyor... <i class="fa-solid fa-dice"></i>';
+        resultTitle.textContent = "Kura Başladı";
+        
+        // Hide actions during raffle
+        btnMaps.classList.add("hidden");
+        btnReset.classList.add("hidden");
+        
+        runWebRaffle(candidates, winner, (finalWinner) => {
+            // Restore final winner headers
+            resultBadge.className = "badge success";
+            resultBadge.textContent = "Karar Verildi!";
+            resultTitle.textContent = "Kazanan Seçenek";
+            
+            // Render final winner card details
+            renderWinnerCard(finalWinner);
+            
+            // Set Map URL and show buttons
+            btnMaps.classList.remove("hidden");
+            const query = (finalWinner.latitude && finalWinner.longitude) 
+                ? `${finalWinner.latitude},${finalWinner.longitude}` 
+                : encodeURIComponent(finalWinner.name);
+            btnMaps.href = `https://www.google.com/maps/search/?api=1&query=${query}`;
+            btnReset.classList.remove("hidden");
+            
+            // Play celebration confetti!
+            playConfetti();
+        });
+    } else {
+        // No tie or raffle already completed: show immediately
+        resultBadge.className = "badge success";
+        resultBadge.textContent = "Karar Verildi!";
+        resultTitle.textContent = "Kazanan Seçenek";
+        btnReset.classList.remove("hidden");
+        
+        renderWinnerCard(winner);
+        
+        // Set Map URL
+        btnMaps.classList.remove("hidden");
+        const query = (winner.latitude && winner.longitude) 
+            ? `${winner.latitude},${winner.longitude}` 
+            : encodeURIComponent(winner.name);
+        btnMaps.href = `https://www.google.com/maps/search/?api=1&query=${query}`;
+        
+        // Play celebration confetti only once if we didn't just run a raffle
+        if (!isTie) {
+            playConfetti();
+        }
+    }
+}
+
+function renderWinnerCard(winner) {
     // Fill winner UI details
     winnerName.textContent = winner.name;
     winnerDetails.textContent = winner.details || "Açıklama bulunmuyor.";
@@ -726,17 +793,53 @@ function showResultScreen() {
         winnerImageContainer.classList.add("hidden");
         winnerCard.classList.add("no-image");
         winnerInfo.classList.add("centered");
+        winnerImage.src = "";
+    }
+}
+
+function runWebRaffle(candidates, winner, onComplete) {
+    let step = 0;
+    const delays = [50, 50, 60, 60, 70, 80, 90, 100, 120, 140, 170, 200, 240, 300, 380, 480, 600];
+    let lastIndex = -1;
+
+    function nextStep() {
+        if (step >= delays.length) {
+            onComplete(winner);
+            return;
+        }
+
+        let nextIndex = Math.floor(Math.random() * candidates.length);
+        if (candidates.length > 1) {
+            while (nextIndex === lastIndex) {
+                nextIndex = Math.floor(Math.random() * candidates.length);
+            }
+        }
+        lastIndex = nextIndex;
+        const tempChoice = candidates[nextIndex];
+        
+        // Render temporary choice details
+        winnerName.textContent = tempChoice.name;
+        winnerDetails.textContent = "Eşit oy alan seçenekler arasında kura çekiliyor...";
+        winnerVotes.textContent = "?";
+        
+        const hasImage = tempChoice.imageUrl && tempChoice.imageUrl.trim() !== "" && tempChoice.imageUrl !== "null" && tempChoice.imageUrl !== "undefined";
+        if (hasImage && tempChoice.imageUrl.startsWith('https://')) {
+            winnerImageContainer.classList.remove("hidden");
+            winnerCard.classList.remove("no-image");
+            winnerInfo.classList.remove("centered");
+            winnerImage.src = tempChoice.imageUrl;
+        } else {
+            winnerImageContainer.classList.add("hidden");
+            winnerCard.classList.add("no-image");
+            winnerInfo.classList.add("centered");
+            winnerImage.src = "";
+        }
+        
+        setTimeout(nextStep, delays[step]);
+        step++;
     }
 
-    // Set Map URL
-    btnMaps.classList.remove("hidden");
-    const query = (winner.latitude && winner.longitude) 
-        ? `${winner.latitude},${winner.longitude}` 
-        : encodeURIComponent(winner.name);
-    btnMaps.href = `https://www.google.com/maps/search/?api=1&query=${query}`;
-
-    // Play celebration confetti!
-    playConfetti();
+    nextStep();
 }
 
 function playConfetti() {
