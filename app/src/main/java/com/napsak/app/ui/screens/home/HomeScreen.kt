@@ -112,7 +112,11 @@ fun HomeScreen(
 
                     OutlinedTextField(
                         value = name,
-                        onValueChange = { name = it },
+                        onValueChange = { input ->
+                            if (input.length <= 15) {
+                                name = input.filter { it.isLetterOrDigit() || it.isWhitespace() }
+                            }
+                        },
                         label = { Text("Takma Adınız") },
                         leadingIcon = {
                             Icon(

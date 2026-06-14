@@ -12,6 +12,7 @@ interface RoomRepository {
     suspend fun startVotingWithChoices(roomId: String, choices: List<Choice>): Result<Unit>
     suspend fun submitVotes(roomId: String, likedChoiceIds: List<String>): Result<Unit>
     suspend fun endVotingAndSetWinner(roomId: String, winnerChoiceId: String): Result<Unit>
+    suspend fun deleteRoom(roomId: String): Result<Unit>
     
     // Local User Credentials (DataStore)
     fun getSavedUserId(): Flow<String?>

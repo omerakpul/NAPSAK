@@ -12,12 +12,11 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
+const auth = firebase.auth();
 
 // App State
 let roomId = "";
-let userId = localStorage.getItem("napsak_user_id") || generateUUID();
-localStorage.setItem("napsak_user_id", userId);
-
+let userId = localStorage.getItem("napsak_user_id") || "";
 let userName = localStorage.getItem("napsak_user_name") || "";
 let isReady = false;
 let roomData = null;
@@ -62,6 +61,14 @@ const winnerImageContainer = document.getElementById("winner-image-container");
 const winnerInfo = document.querySelector(".winner-info");
 const winnerCard = document.querySelector(".winner-card");
 
+// XSS Protection: Escape user-provided strings before inserting into HTML
+function escapeHTML(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
 // On Load: Check URL parameters for Room ID
 window.addEventListener("DOMContentLoaded", () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -71,6 +78,24 @@ window.addEventListener("DOMContentLoaded", () => {
     }
     if (userName) {
         inputName.value = userName;
+    }
+});
+
+// Firebase Anonymous Authentication
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        userId = user.uid;
+        localStorage.setItem("napsak_user_id", userId);
+        btnJoin.disabled = false;
+        btnJoin.innerHTML = 'Katıl <i class="fa-solid fa-right-to-bracket"></i>';
+        console.log("Firebase Auth signed in: ", userId);
+    } else {
+        btnJoin.disabled = true;
+        btnJoin.innerHTML = 'Bağlanılıyor... <i class="fa-solid fa-spinner fa-spin"></i>';
+        auth.signInAnonymously().catch(error => {
+            console.error("Anonymous auth failed:", error);
+            alert("Firebase sunucusuna bağlanılamadı!");
+        });
     }
 });
 
@@ -84,6 +109,9 @@ function showScreen(screenToShow) {
 
 // Generate unique ID for the user
 function generateUUID() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return 'web-' + crypto.randomUUID();
+    }
     return 'web-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
 }
 
@@ -94,6 +122,11 @@ btnJoin.addEventListener("click", () => {
 
     if (!userName) {
         alert("Lütfen adınızı girin!");
+        return;
+    }
+    const nameRegex = /^[a-zA-Z0-9çÇğĞıİöÖşŞüÜ\s]{1,15}$/;
+    if (!nameRegex.test(userName)) {
+        alert("Lütfen sadece harf, rakam ve boşluk içeren geçerli bir isim girin (en fazla 15 karakter)!");
         return;
     }
     if (!roomId || roomId.length !== 6) {
@@ -257,11 +290,12 @@ function updateLobbyUI() {
         item.className = `participant-item ${isSelf ? 'self' : ''} ${p.ready ? 'ready' : ''}`;
         
         const isHost = roomData.hostId === p.id;
-        const displayName = isSelf ? `${p.name} (Sen)` : p.name;
+        const escapedName = escapeHTML(p.name);
+        const displayName = isSelf ? `${escapedName} (Sen)` : escapedName;
         
         item.innerHTML = `
             <div class="p-info">
-                <div class="p-avatar">${p.name.charAt(0).toUpperCase()}</div>
+                <div class="p-avatar">${escapedName.charAt(0).toUpperCase()}</div>
                 <div class="p-name">${displayName}${isHost ? ' <i class="fa-solid fa-crown" style="color:#FFD700;font-size:12px;"></i>' : ''}</div>
             </div>
             <span class="p-status-badge ${p.ready ? 'ready' : 'waiting'}">
@@ -358,18 +392,21 @@ function renderCardsStack() {
     card.style.zIndex = 1;
     
     const hasImage = choice.imageUrl && choice.imageUrl.trim() !== "" && choice.imageUrl !== "null" && choice.imageUrl !== "undefined";
+    const safeImageUrl = (hasImage && choice.imageUrl.startsWith('https://')) ? escapeHTML(choice.imageUrl) : '';
+    const safeName = escapeHTML(choice.name);
+    const safeDetails = escapeHTML(choice.details) || "Açıklama bulunmuyor.";
     
-    if (hasImage) {
+    if (hasImage && safeImageUrl) {
         card.className = "swipe-card";
         card.innerHTML = `
             <div class="card-badge like">EVET</div>
             <div class="card-badge dislike">HAYIR</div>
             <div class="card-img-container">
-                <img src="${choice.imageUrl}" alt="${choice.name}" draggable="false">
+                <img src="${safeImageUrl}" alt="${safeName}" draggable="false">
             </div>
             <div class="card-info">
-                <h2>${choice.name}</h2>
-                <p>${choice.details || "Açıklama bulunmuyor."}</p>
+                <h2>${safeName}</h2>
+                <p>${safeDetails}</p>
             </div>
         `;
     } else {
@@ -378,8 +415,8 @@ function renderCardsStack() {
             <div class="card-badge like">EVET</div>
             <div class="card-badge dislike">HAYIR</div>
             <div class="card-info centered">
-                <h2>${choice.name}</h2>
-                <p>${choice.details || "Açıklama bulunmuyor."}</p>
+                <h2>${safeName}</h2>
+                <p>${safeDetails}</p>
             </div>
         `;
     }
@@ -637,7 +674,7 @@ function showResultScreen() {
     
     const hasImage = winner.imageUrl && winner.imageUrl.trim() !== "" && winner.imageUrl !== "null" && winner.imageUrl !== "undefined";
     
-    if (hasImage) {
+    if (hasImage && winner.imageUrl.startsWith('https://')) {
         winnerImageContainer.classList.remove("hidden");
         winnerCard.classList.remove("no-image");
         winnerInfo.classList.remove("centered");
@@ -691,41 +728,10 @@ btnReset.addEventListener("click", () => {
     window.location.href = window.location.pathname; // Reload without query params
 });
 
-// Global error catcher for debugging on mobile client
+// Error logging (console only in production)
 window.addEventListener("error", (e) => {
-    showDebugToast(`Hata: ${e.message} at ${e.filename}:${e.lineno}`);
+    console.error("App error:", e.message, e.filename, e.lineno);
 });
 window.addEventListener("unhandledrejection", (e) => {
-    showDebugToast(`Promise Hatası: ${e.reason}`);
+    console.error("Unhandled promise rejection:", e.reason);
 });
-
-function showDebugToast(message) {
-    console.error(message);
-    let toast = document.getElementById("debug-toast");
-    if (!toast) {
-        toast = document.createElement("div");
-        toast.id = "debug-toast";
-        toast.style.position = "fixed";
-        toast.style.bottom = "12px";
-        toast.style.left = "12px";
-        toast.style.right = "12px";
-        toast.style.background = "rgba(255, 75, 75, 0.95)";
-        toast.style.color = "white";
-        toast.style.padding = "12px 16px";
-        toast.style.borderRadius = "12px";
-        toast.style.fontSize = "13px";
-        toast.style.zIndex = "99999";
-        toast.style.wordBreak = "break-all";
-        toast.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
-        toast.style.fontFamily = "monospace";
-        document.body.appendChild(toast);
-    }
-    toast.textContent = message;
-    
-    // Auto remove after 8 seconds
-    setTimeout(() => {
-        if (toast && toast.parentNode) {
-            toast.parentNode.removeChild(toast);
-        }
-    }, 8000);
-}

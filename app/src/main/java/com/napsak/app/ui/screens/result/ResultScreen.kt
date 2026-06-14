@@ -221,7 +221,14 @@ fun ResultScreen(
 
                 // Back to Home Button
                 Button(
-                    onClick = onNavigateToHome,
+                    onClick = {
+                        val currentRoomVal = sharedViewModel.currentRoom.value
+                        val isHost = currentRoomVal?.hostId == sharedViewModel.currentUserId.value
+                        if (isHost) {
+                            sharedViewModel.deleteRoom(roomId)
+                        }
+                        onNavigateToHome()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),

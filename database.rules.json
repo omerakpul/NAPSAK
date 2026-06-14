@@ -1,0 +1,45 @@
+{
+  "rules": {
+    "rooms": {
+      ".indexOn": ["hostId"],
+      "$roomId": {
+        ".read": "auth != null && (data.child('participants').child(auth.uid).exists() || !data.exists())",
+        ".write": "auth != null && ((!data.exists() && newData.child('hostId').val() === auth.uid && newData.child('participants').child(auth.uid).exists()) || (data.exists() && data.child('hostId').val() === auth.uid && !newData.exists()))",
+
+        "hostId": {
+          ".write": false
+        },
+
+        "state": {
+          ".write": "auth != null && data.parent().child('hostId').val() === auth.uid",
+          ".validate": "newData.val() === 'WAITING' || newData.val() === 'VOTING' || newData.val() === 'RESULT'"
+        },
+
+        "winnerChoiceId": {
+          ".write": "auth != null && data.parent().child('hostId').val() === auth.uid",
+          ".validate": "newData.isString()"
+        },
+
+        "participants": {
+          "$userId": {
+            ".write": "auth != null && auth.uid === $userId",
+            ".validate": "newData.hasChildren(['id', 'name'])",
+            "hasVoted": {
+              ".validate": "newData.isBoolean() && (!data.exists() || data.val() == false || newData.val() == true)"
+            }
+          }
+        },
+
+        "choices": {
+          ".write": "auth != null && data.parent().child('hostId').val() === auth.uid",
+          "$choiceId": {
+            "voteCount": {
+              ".write": "auth != null && data.parent().parent().parent().child('participants').child(auth.uid).exists()",
+              ".validate": "newData.isNumber() && (!data.exists() ? newData.val() === 1 : newData.val() === data.val() + 1)"
+            }
+          }
+        }
+      }
+    }
+  }
+}

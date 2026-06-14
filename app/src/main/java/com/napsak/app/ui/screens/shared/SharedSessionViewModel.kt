@@ -6,6 +6,7 @@ import com.napsak.app.domain.model.Choice
 import com.napsak.app.domain.model.Room
 import com.napsak.app.domain.model.RoomState
 import com.napsak.app.domain.repository.RoomRepository
+import com.napsak.app.domain.usecase.DeleteRoomUseCase
 import com.napsak.app.domain.usecase.EndVotingUseCase
 import com.napsak.app.domain.usecase.ObserveRoomUseCase
 import com.napsak.app.domain.usecase.SubmitVotesUseCase
@@ -25,6 +26,7 @@ class SharedSessionViewModel @Inject constructor(
     private val observeRoomUseCase: ObserveRoomUseCase,
     private val submitVotesUseCase: SubmitVotesUseCase,
     private val endVotingUseCase: EndVotingUseCase,
+    private val deleteRoomUseCase: DeleteRoomUseCase,
     private val roomRepository: RoomRepository
 ) : ViewModel() {
 
@@ -110,6 +112,12 @@ class SharedSessionViewModel @Inject constructor(
             endVotingUseCase(roomId, winner.id)
             _winnerChoice.value = winner
             onComplete()
+        }
+    }
+
+    fun deleteRoom(roomId: String) {
+        viewModelScope.launch {
+            deleteRoomUseCase(roomId)
         }
     }
 
