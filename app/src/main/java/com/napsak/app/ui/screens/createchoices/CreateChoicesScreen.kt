@@ -85,7 +85,46 @@ fun CreateChoicesScreen(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Şablon Kategoriler
+            Text(
+                text = "Şablon Kategoriler",
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                ),
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            androidx.compose.foundation.lazy.LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val templates = listOf(
+                    "🍔 Yemek" to "Yemek",
+                    "🎬 Aktivite" to "Aktivite",
+                    "🍿 Film" to "Film",
+                    "🎮 Eğlence" to "Eğlence"
+                )
+                items(templates) { (label, value) ->
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(CoralPrimary.copy(alpha = 0.08f))
+                            .clickable { viewModel.loadPresetTemplate(value) }
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = CoralPrimary
+                            )
+                        )
+                    }
+                }
+            }
 
             // Input Card
             Card(
@@ -130,6 +169,53 @@ fun CreateChoicesScreen(
                             cursorColor = CoralPrimary
                         )
                     )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = uiState.currentCategory,
+                        onValueChange = { viewModel.onCategoryChange(it) },
+                        label = { Text("Kategori (isteğe bağlı)") },
+                        placeholder = { Text("ör: Yemek, Aktivite, Tatlılar...") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = CoralPrimary,
+                            focusedLabelColor = CoralPrimary,
+                            cursorColor = CoralPrimary
+                        )
+                    )
+
+                    // Show existing categories in this room as suggestion chips
+                    val existingCategories = uiState.choices.map { it.category }.filter { it.isNotBlank() }.distinct()
+                    if (existingCategories.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        androidx.compose.foundation.lazy.LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            items(existingCategories) { cat ->
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(
+                                            if (uiState.currentCategory == cat) CoralPrimary.copy(alpha = 0.15f)
+                                            else MaterialTheme.colorScheme.surfaceVariant
+                                        )
+                                        .clickable { viewModel.onCategoryChange(cat) }
+                                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = cat,
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (uiState.currentCategory == cat) CoralPrimary else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -188,13 +274,29 @@ fun CreateChoicesScreen(
                             fontWeight = FontWeight.Bold
                         )
                     )
-                    Text(
-                        text = "${uiState.choices.size} adet",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = CoralPrimary,
-                            fontWeight = FontWeight.SemiBold
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 2.dp)
+                    ) {
+                        Text(
+                            text = "${uiState.choices.size} adet",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = CoralPrimary,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         )
-                    )
+                        if (uiState.choices.isNotEmpty()) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "•  Temizle",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = Color(0xFFE57373),
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                modifier = Modifier.clickable { viewModel.clearAllChoices() }
+                            )
+                        }
+                    }
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -245,7 +347,7 @@ fun CreateChoicesScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Yukarıdan seçenek ekleyerek başla",
+                            text = "Yukarıdan şablon yükle veya kendin ekle",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
                             )
@@ -253,22 +355,36 @@ fun CreateChoicesScreen(
                     }
                 }
             } else {
+                val groupedChoices = uiState.choices.groupBy { it.category }
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    itemsIndexed(
-                        items = uiState.choices,
-                        key = { _, choice -> choice.id }
-                    ) { index, choice ->
-                        ChoiceListItem(
-                            index = index + 1,
-                            choice = choice,
-                            onEdit = { viewModel.startEditing(choice) },
-                            onRemove = { viewModel.removeChoice(choice.id) }
-                        )
+                    groupedChoices.forEach { (category, choicesInCategory) ->
+                        item(key = "header_${category}") {
+                            Text(
+                                text = if (category.isBlank()) "GENEL" else category.uppercase(),
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = if (category.isBlank()) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f) else CoralPrimary,
+                                    letterSpacing = 1.sp
+                                ),
+                                modifier = Modifier.padding(top = 10.dp, bottom = 4.dp)
+                            )
+                        }
+                        itemsIndexed(
+                            items = choicesInCategory,
+                            key = { _, choice -> choice.id }
+                        ) { index, choice ->
+                            ChoiceListItem(
+                                index = index + 1,
+                                choice = choice,
+                                onEdit = { viewModel.startEditing(choice) },
+                                onRemove = { viewModel.removeChoice(choice.id) }
+                            )
+                        }
                     }
                 }
             }

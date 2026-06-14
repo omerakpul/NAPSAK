@@ -75,8 +75,9 @@ class RoomRepositoryImpl @Inject constructor(
             val cVoteCount = cSnap.child("voteCount").getValue(Int::class.java) ?: 0
             val cLatitude = cSnap.child("latitude").getValue(Double::class.java)
             val cLongitude = cSnap.child("longitude").getValue(Double::class.java)
+            val cCategory = cSnap.child("category").getValue(String::class.java) ?: ""
             if (cId.isNotEmpty()) {
-                choices[cId] = Choice(cId, cName, cDetails, cImageUrl, cVoteCount, cLatitude, cLongitude)
+                choices[cId] = Choice(cId, cName, cDetails, cImageUrl, cVoteCount, cLatitude, cLongitude, cCategory)
             }
         }
         

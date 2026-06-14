@@ -405,6 +405,7 @@ function renderCardsStack() {
                 <img src="${safeImageUrl}" alt="${safeName}" draggable="false">
             </div>
             <div class="card-info">
+                ${choice.category ? `<span class="card-category-badge">${escapeHTML(choice.category).toUpperCase()}</span>` : ''}
                 <h2>${safeName}</h2>
                 <p>${safeDetails}</p>
             </div>
@@ -415,6 +416,7 @@ function renderCardsStack() {
             <div class="card-badge like">EVET</div>
             <div class="card-badge dislike">HAYIR</div>
             <div class="card-info centered">
+                ${choice.category ? `<span class="card-category-badge">${escapeHTML(choice.category).toUpperCase()}</span>` : ''}
                 <h2>${safeName}</h2>
                 <p>${safeDetails}</p>
             </div>

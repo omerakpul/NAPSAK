@@ -25,7 +25,8 @@ data class Choice(
     val imageUrl: String? = null,
     val voteCount: Int = 0,
     val latitude: Double? = null,
-    val longitude: Double? = null
+    val longitude: Double? = null,
+    val category: String = ""
 )
 
 @Serializable

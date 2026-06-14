@@ -552,6 +552,25 @@ fun SwipeableCard(
                             .fillMaxWidth()
                             .padding(20.dp)
                     ) {
+                        if (choice.category.isNotBlank()) {
+                            Box(
+                                modifier = Modifier
+                                    .padding(bottom = 6.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(CoralPrimary.copy(alpha = 0.12f))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = choice.category.uppercase(),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = CoralPrimary,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                )
+                            }
+                        }
+
                         Text(
                             text = choice.name,
                             style = MaterialTheme.typography.titleLarge.copy(
@@ -580,6 +599,25 @@ fun SwipeableCard(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
+                        if (choice.category.isNotBlank()) {
+                            Box(
+                                modifier = Modifier
+                                    .padding(bottom = 12.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(CoralPrimary.copy(alpha = 0.12f))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = choice.category.uppercase(),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = CoralPrimary,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                )
+                            }
+                        }
+
                         Text(
                             text = choice.name,
                             style = MaterialTheme.typography.headlineMedium.copy(
