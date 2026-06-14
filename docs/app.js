@@ -58,6 +58,9 @@ const winnerName = document.getElementById("winner-name");
 const winnerDetails = document.getElementById("winner-details");
 const btnMaps = document.getElementById("btn-maps");
 const btnReset = document.getElementById("btn-reset");
+const winnerImageContainer = document.getElementById("winner-image-container");
+const winnerInfo = document.querySelector(".winner-info");
+const winnerCard = document.querySelector(".winner-card");
 
 // On Load: Check URL parameters for Room ID
 window.addEventListener("DOMContentLoaded", () => {
@@ -184,11 +187,28 @@ function handleRoomStateChange() {
         showScreen(screenLobby);
         updateLobbyUI();
     } else if (state === "VOTING") {
-        showScreen(screenVoting);
-        initVotingScreen();
+        if (!screenVoting.classList.contains("active")) {
+            showScreen(screenVoting);
+            initVotingScreen();
+        } else {
+            // Already on voting screen, just update the real-time voter completion counts
+            updateVoterProgressUI();
+        }
     } else if (state === "RESULT") {
         showScreen(screenResult);
         showResultScreen();
+    }
+}
+
+function updateVoterProgressUI() {
+    if (roomData.participants) {
+        const participants = Object.values(roomData.participants);
+        const total = participants.length;
+        const finishedCount = participants.filter(p => p.hasVoted).length;
+        const countText = document.getElementById("web-finished-count");
+        if (countText) {
+            countText.textContent = `Tamamlanan: ${finishedCount} / ${total}`;
+        }
     }
 }
 
@@ -252,6 +272,15 @@ function initVotingScreen() {
     // Sort choices to ensure consistency across devices
     choicesList.sort((a, b) => a.id.localeCompare(b.id));
 
+    // Check if current user has already voted
+    const currentUser = roomData.participants ? roomData.participants[userId] : null;
+    const userAlreadyVoted = currentUser && (currentUser.hasVoted || currentUser.voted);
+
+    if (userAlreadyVoted) {
+        currentCardIndex = choicesList.length;
+        votesSubmitted = true;
+    }
+
     updateVotingProgress();
 
     // Start timer interval if not already started
@@ -306,26 +335,38 @@ function renderCardsStack() {
     for (let i = currentCardIndex; i < choicesList.length; i++) {
         const choice = choicesList[i];
         const card = document.createElement("div");
-        card.className = "swipe-card";
         card.dataset.index = i;
         card.dataset.id = choice.id;
         
         // Stack index styling (visual hierarchy)
         card.style.zIndex = choicesList.length - i;
         
-        const imageUrl = choice.imageUrl || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&auto=format&fit=crop&q=60";
+        const hasImage = choice.imageUrl && choice.imageUrl.trim() !== "" && choice.imageUrl !== "null" && choice.imageUrl !== "undefined";
         
-        card.innerHTML = `
-            <div class="card-badge like">EVET</div>
-            <div class="card-badge dislike">HAYIR</div>
-            <div class="card-img-container">
-                <img src="${imageUrl}" alt="${choice.name}" draggable="false">
-            </div>
-            <div class="card-info">
-                <h2>${choice.name}</h2>
-                <p>${choice.details || "Açıklama bulunmuyor."}</p>
-            </div>
-        `;
+        if (hasImage) {
+            card.className = "swipe-card";
+            card.innerHTML = `
+                <div class="card-badge like">EVET</div>
+                <div class="card-badge dislike">HAYIR</div>
+                <div class="card-img-container">
+                    <img src="${choice.imageUrl}" alt="${choice.name}" draggable="false">
+                </div>
+                <div class="card-info">
+                    <h2>${choice.name}</h2>
+                    <p>${choice.details || "Açıklama bulunmuyor."}</p>
+                </div>
+            `;
+        } else {
+            card.className = "swipe-card no-image";
+            card.innerHTML = `
+                <div class="card-badge like">EVET</div>
+                <div class="card-badge dislike">HAYIR</div>
+                <div class="card-info centered">
+                    <h2>${choice.name}</h2>
+                    <p>${choice.details || "Açıklama bulunmuyor."}</p>
+                </div>
+            `;
+        }
         
         cardContainer.appendChild(card);
         
@@ -349,8 +390,11 @@ function initCardDrag(card) {
 
     // Touch and pointer events support
     card.addEventListener("pointerdown", onPointerDown);
+    card.addEventListener("pointercancel", onPointerCancel);
     
     function onPointerDown(e) {
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        
         startX = e.clientX;
         startY = e.clientY;
         isDragging = true;
@@ -358,7 +402,13 @@ function initCardDrag(card) {
         
         document.addEventListener("pointermove", onPointerMove);
         document.addEventListener("pointerup", onPointerUp);
-        card.setPointerCapture(e.pointerId);
+        document.addEventListener("pointercancel", onPointerCancel);
+        
+        try {
+            card.setPointerCapture(e.pointerId);
+        } catch (err) {
+            console.warn("setPointerCapture failed:", err);
+        }
     }
     
     function onPointerMove(e) {
@@ -378,44 +428,62 @@ function initCardDrag(card) {
         const dislikeBadge = card.querySelector(".card-badge.dislike");
         
         if (currentX > 15) {
-            likeBadge.style.opacity = Math.min((currentX - 15) / 50, 1);
-            dislikeBadge.style.opacity = 0;
+            if (likeBadge) likeBadge.style.opacity = Math.min((currentX - 15) / 50, 1);
+            if (dislikeBadge) dislikeBadge.style.opacity = 0;
             card.classList.add("swiping-right");
             card.classList.remove("swiping-left");
         } else if (currentX < -15) {
-            dislikeBadge.style.opacity = Math.min((-currentX - 15) / 50, 1);
-            likeBadge.style.opacity = 0;
+            if (dislikeBadge) dislikeBadge.style.opacity = Math.min((-currentX - 15) / 50, 1);
+            if (likeBadge) likeBadge.style.opacity = 0;
             card.classList.add("swiping-left");
             card.classList.remove("swiping-right");
         } else {
-            likeBadge.style.opacity = 0;
-            dislikeBadge.style.opacity = 0;
+            if (likeBadge) likeBadge.style.opacity = 0;
+            if (dislikeBadge) dislikeBadge.style.opacity = 0;
             card.classList.remove("swiping-left", "swiping-right");
         }
     }
     
     function onPointerUp(e) {
         if (!isDragging) return;
-        isDragging = false;
-        card.classList.remove("dragging");
-        
-        document.removeEventListener("pointermove", onPointerMove);
-        document.removeEventListener("pointerup", onPointerUp);
+        cleanupDrag(e.pointerId);
         
         // Evaluate swipe
         if (currentX > swipeThreshold) {
-            // Swipe Right (Like)
             swipeCardAction(card, "right", currentY);
         } else if (currentX < -swipeThreshold) {
-            // Swipe Left (Dislike)
             swipeCardAction(card, "left", currentY);
         } else {
-            // Reset position
-            card.style.transform = "";
-            card.querySelector(".card-badge.like").style.opacity = 0;
-            card.querySelector(".card-badge.dislike").style.opacity = 0;
-            card.classList.remove("swiping-left", "swiping-right");
+            resetCardPosition();
         }
+    }
+    
+    function onPointerCancel(e) {
+        if (!isDragging) return;
+        cleanupDrag(e.pointerId);
+        resetCardPosition();
+    }
+    
+    function cleanupDrag(pointerId) {
+        isDragging = false;
+        card.classList.remove("dragging");
+        document.removeEventListener("pointermove", onPointerMove);
+        document.removeEventListener("pointerup", onPointerUp);
+        document.removeEventListener("pointercancel", onPointerCancel);
+        try {
+            card.releasePointerCapture(pointerId);
+        } catch (err) {}
+    }
+    
+    function resetCardPosition() {
+        card.style.transform = "";
+        const likeBadge = card.querySelector(".card-badge.like");
+        const dislikeBadge = card.querySelector(".card-badge.dislike");
+        if (likeBadge) likeBadge.style.opacity = 0;
+        if (dislikeBadge) dislikeBadge.style.opacity = 0;
+        card.classList.remove("swiping-left", "swiping-right");
+        currentX = 0;
+        currentY = 0;
     }
 }
 
@@ -516,10 +584,17 @@ function showResultScreen() {
     winnerDetails.textContent = winner.details || "Açıklama bulunmuyor.";
     winnerVotes.textContent = winner.voteCount || 0;
     
-    if (winner.imageUrl) {
+    const hasImage = winner.imageUrl && winner.imageUrl.trim() !== "" && winner.imageUrl !== "null" && winner.imageUrl !== "undefined";
+    
+    if (hasImage) {
+        winnerImageContainer.classList.remove("hidden");
+        winnerCard.classList.remove("no-image");
+        winnerInfo.classList.remove("centered");
         winnerImage.src = winner.imageUrl;
     } else {
-        winnerImage.src = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&auto=format&fit=crop&q=60";
+        winnerImageContainer.classList.add("hidden");
+        winnerCard.classList.add("no-image");
+        winnerInfo.classList.add("centered");
     }
 
     // Set Map URL

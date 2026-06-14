@@ -122,12 +122,14 @@
             </div>
             
             <div class="winner-card glass">
-                <div class="winner-image-container">
-                    <img id="winner-image" src="" alt="Kazanan Resim" onerror="this.src='https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&auto=format&fit=crop&q=60'">
-                    <div class="winner-votes-badge"><i class="fa-solid fa-fire"></i> <span id="winner-votes">0</span> Oy</div>
+                <div id="winner-image-container" class="winner-image-container">
+                    <img id="winner-image" src="" alt="Kazanan Resim">
                 </div>
                 <div class="winner-info">
-                    <h2 id="winner-name">Restoran Adı</h2>
+                    <div class="winner-header-row">
+                        <h2 id="winner-name">Restoran Adı</h2>
+                        <span id="winner-votes-badge" class="winner-votes-badge-inline"><i class="fa-solid fa-fire"></i> <span id="winner-votes">0</span> Oy</span>
+                    </div>
                     <p id="winner-details">Açıklama ve detaylar buraya gelecek.</p>
                 </div>
             </div>
