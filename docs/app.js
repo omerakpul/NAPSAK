@@ -246,6 +246,10 @@ function handleRoomStateChange() {
             updateVoterProgressUI();
         }
     } else if (state === "RESULT") {
+        if (!votesSubmitted) {
+            votesSubmitted = true;
+            submitVotesToFirebase();
+        }
         showScreen(screenResult);
         showResultScreen();
     }
@@ -674,7 +678,7 @@ function startWebResultCountdown() {
     
     // Set initial display
     if (textElement) {
-        textElement.innerHTML = `Herkes oyladı! Sonuçlar açıklanıyor... <span style="font-size:28px; font-weight:900; color:var(--primary-color); display:block; margin-top:8px;">${secondsLeft}</span>`;
+        textElement.innerHTML = `Herkes oyladı! Sonuçlar açıklanıyor... <span style="font-size:28px; font-weight:900; color:var(--primary); display:block; margin-top:8px;">${secondsLeft}</span>`;
     }
     secondsLeft--;
 
@@ -687,7 +691,7 @@ function startWebResultCountdown() {
             return;
         }
         if (textElement) {
-            textElement.innerHTML = `Herkes oyladı! Sonuçlar açıklanıyor... <span style="font-size:28px; font-weight:900; color:var(--primary-color); display:block; margin-top:8px;">${secondsLeft}</span>`;
+            textElement.innerHTML = `Herkes oyladı! Sonuçlar açıklanıyor... <span style="font-size:28px; font-weight:900; color:var(--primary); display:block; margin-top:8px;">${secondsLeft}</span>`;
         }
         secondsLeft--;
     }, 1000);
