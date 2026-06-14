@@ -65,6 +65,39 @@ fun VotingScreen(
 
     // Countdown Timer State (5 seconds per choice)
     var timeLeft by remember(choices.size) { mutableIntStateOf(if (choices.isNotEmpty()) choices.size * 5 else 30) }
+    var countdownTime by remember { mutableIntStateOf(-1) }
+
+    val participantsList = currentRoom?.participants?.values?.toList() ?: emptyList()
+    val allVoted = participantsList.isNotEmpty() && participantsList.all { it.hasVoted }
+    val isHost = currentRoom?.hostId == sharedViewModel.currentUserId.value
+
+    // Auto-transition countdown when all participants have voted
+    LaunchedEffect(allVoted, votesSubmitted) {
+        if (allVoted && votesSubmitted) {
+            countdownTime = 3
+            while (countdownTime > 0) {
+                kotlinx.coroutines.delay(1000L)
+                countdownTime--
+            }
+            
+            if (isHost) {
+                val currentRoomVal = currentRoom ?: return@LaunchedEffect
+                val dbChoices = currentRoomVal.choices.values.toList()
+                val maxVotes = dbChoices.maxOfOrNull { it.voteCount } ?: 0
+                
+                val candidates = if (maxVotes > 0) {
+                    dbChoices.filter { it.voteCount == maxVotes }
+                } else {
+                    dbChoices
+                }
+                
+                val winner = candidates.random()
+                sharedViewModel.declareWinner(roomId, winner) {
+                    onNavigateToResult(roomId)
+                }
+            }
+        }
+    }
 
     // Oylama ekranı açıldığında oda güncellemelerini takip et
     LaunchedEffect(roomId) {
@@ -208,82 +241,26 @@ fun VotingScreen(
                         )
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        if (isHost) {
+                        if (allVoted) {
                             Text(
-                                text = if (allVoted) "Herkes oylamayı tamamladı!" else "Diğer katılımcıların oylamayı bitirmesi bekleniyor...",
+                                text = "Sonuçlar açıklanıyor...",
                                 style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (allVoted) CoralPrimary else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                                    fontWeight = FontWeight.Bold,
+                                    color = CoralPrimary
                                 ),
                                 textAlign = TextAlign.Center
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = "Tamamlanan: $finishedCount / $totalParticipants",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-                                )
+                                text = if (countdownTime > 0) "$countdownTime" else "Hesaplanıyor...",
+                                fontSize = 56.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = CoralPrimary,
+                                textAlign = TextAlign.Center
                             )
-                            Spacer(modifier = Modifier.height(24.dp))
-
-                            val coroutineScope = rememberCoroutineScope()
-                            Button(
-                                onClick = {
-                                    val currentRoomVal = room ?: return@Button
-                                    
-                                    val dbChoices = currentRoomVal.choices.values.toList()
-                                    val maxVotes = dbChoices.maxOfOrNull { it.voteCount } ?: 0
-                                    
-                                    val candidates = if (maxVotes > 0) {
-                                        dbChoices.filter { it.voteCount == maxVotes }
-                                    } else {
-                                        dbChoices
-                                    }
-                                    
-                                    val winner = candidates.random()
-                                    val isTie = candidates.size > 1
-
-                                    if (isTie) {
-                                        isSelectingWinner = true
-                                        coroutineScope.launch {
-                                            val animationSteps = listOf(
-                                                50L, 50L, 60L, 60L, 70L, 80L, 90L, 100L, 120L, 140L, 170L, 200L, 240L, 300L, 380L, 480L, 600L
-                                            )
-                                            var lastIndex = -1
-                                            for (delayTime in animationSteps) {
-                                                var nextIndex = (0 until candidates.size).random()
-                                                if (candidates.size > 1) {
-                                                    while (nextIndex == lastIndex) {
-                                                        nextIndex = (0 until candidates.size).random()
-                                                    }
-                                                }
-                                                lastIndex = nextIndex
-                                                animatingChoice = candidates[nextIndex]
-                                                kotlinx.coroutines.delay(delayTime)
-                                            }
-                                            
-                                            animatingChoice = winner
-                                            kotlinx.coroutines.delay(1000L)
-                                            
-                                            sharedViewModel.declareWinner(roomId, winner) {
-                                                isSelectingWinner = false
-                                                onNavigateToResult(roomId)
-                                            }
-                                        }
-                                    } else {
-                                        sharedViewModel.declareWinner(roomId, winner) {
-                                            onNavigateToResult(roomId)
-                                        }
-                                    }
-                                },
-                                enabled = allVoted,
-                                shape = RoundedCornerShape(14.dp)
-                            ) {
-                                Text("Sonuçları Gör")
-                            }
                         } else {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(32.dp),
+                                modifier = Modifier.size(36.dp),
                                 color = CoralPrimary,
                                 strokeWidth = 3.dp
                             )

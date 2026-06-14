@@ -218,6 +218,11 @@ function observeRoom() {
             if (countText) {
                 countText.textContent = `Tamamlanan: ${finishedCount} / ${total}`;
             }
+
+            const allVoted = total > 0 && participants.every(p => p.hasVoted);
+            if (allVoted && votesSubmitted && roomData.state === "VOTING") {
+                startWebResultCountdown();
+            }
         }
 
         // Check state transitions
@@ -654,6 +659,38 @@ function submitVotesToFirebase() {
             return (currentVotes || 0) + 1;
         });
     });
+}
+
+let countdownActive = false;
+function startWebResultCountdown() {
+    if (countdownActive) return;
+    countdownActive = true;
+    
+    let secondsLeft = 3;
+    const textElement = document.getElementById("voting-finished-text");
+    const loader = document.querySelector(".loader-ring");
+    
+    if (loader) loader.style.display = "none";
+    
+    // Set initial display
+    if (textElement) {
+        textElement.innerHTML = `Herkes oyladı! Sonuçlar açıklanıyor... <span style="font-size:28px; font-weight:900; color:var(--primary-color); display:block; margin-top:8px;">${secondsLeft}</span>`;
+    }
+    secondsLeft--;
+
+    const interval = setInterval(() => {
+        if (secondsLeft < 0) {
+            clearInterval(interval);
+            if (textElement) {
+                textElement.innerHTML = `Sonuçlar yükleniyor... <i class="fa-solid fa-spinner fa-spin"></i>`;
+            }
+            return;
+        }
+        if (textElement) {
+            textElement.innerHTML = `Herkes oyladı! Sonuçlar açıklanıyor... <span style="font-size:28px; font-weight:900; color:var(--primary-color); display:block; margin-top:8px;">${secondsLeft}</span>`;
+        }
+        secondsLeft--;
+    }, 1000);
 }
 
 // Show Result Screen
