@@ -126,7 +126,7 @@ fun LobbyScreen(
                         onClick = {
                             val sendIntent = Intent().apply {
                                 action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_TEXT, "N'APSAK? Odamıza katıl! Oda Kodu: $roomId")
+                                putExtra(Intent.EXTRA_TEXT, "N'APSAK? Odamıza katıl!\nLink: https://omerakpul.github.io/NAPSAK/?room=$roomId\nOda Kodu: $roomId")
                                 type = "text/plain"
                             }
                             val shareIntent = Intent.createChooser(sendIntent, null)
@@ -168,7 +168,7 @@ fun LobbyScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             AsyncImage(
-                                model = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=$roomId",
+                                model = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://omerakpul.github.io/NAPSAK/?room=$roomId",
                                 contentDescription = "QR Code",
                                 modifier = Modifier.fillMaxSize()
                             )
