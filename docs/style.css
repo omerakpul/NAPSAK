@@ -461,9 +461,8 @@ h2 {
     height: 100%;
     border-radius: 28px;
     overflow: hidden;
-    background-color: var(--surface);
+    background-color: #1a2233; /* Solid background prevents text and cards underneath from bleeding through */
     border: 1px solid var(--surface-border);
-    backdrop-filter: blur(20px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
     display: flex;
     flex-direction: column;

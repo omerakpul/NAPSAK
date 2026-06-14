@@ -123,6 +123,14 @@ btnJoin.addEventListener("click", () => {
                 name: userName,
                 ready: false
             }).then(() => {
+                // Update browser URL query parameter with room code
+                try {
+                    const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + `?room=${roomId}`;
+                    window.history.replaceState({ path: newUrl }, "", newUrl);
+                } catch (err) {
+                    console.warn("history.replaceState failed:", err);
+                }
+
                 // Remove participant automatically on disconnect to avoid blocking voting if they leave
                 participantRef.onDisconnect().remove().catch(err => {
                     console.warn("onDisconnect register failed:", err);
