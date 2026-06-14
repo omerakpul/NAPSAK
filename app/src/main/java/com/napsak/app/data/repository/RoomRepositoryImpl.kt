@@ -38,8 +38,9 @@ class RoomRepositoryImpl @Inject constructor(
             val pId = pSnap.child("id").getValue(String::class.java) ?: ""
             val pName = pSnap.child("name").getValue(String::class.java) ?: ""
             val pIsReady = pSnap.child("ready").getValue(Boolean::class.java) ?: pSnap.child("isReady").getValue(Boolean::class.java) ?: false
+            val pHasVoted = pSnap.child("hasVoted").getValue(Boolean::class.java) ?: false
             if (pId.isNotEmpty()) {
-                participants[pId] = Participant(pId, pName, pIsReady)
+                participants[pId] = Participant(pId, pName, pIsReady, pHasVoted)
             }
         }
         
@@ -188,18 +189,23 @@ class RoomRepositoryImpl @Inject constructor(
             }
     }
 
-    override suspend fun submitVotes(roomId: String, likedChoiceIds: List<String>): Result<Unit> = suspendCancellableCoroutine { continuation ->
-        if (likedChoiceIds.isEmpty()) {
-            continuation.resume(Result.success(Unit))
-            return@suspendCancellableCoroutine
+    override suspend fun submitVotes(roomId: String, likedChoiceIds: List<String>): Result<Unit> {
+        val userId = userPreferencesDataSource.userIdFlow.firstOrNull() ?: ""
+        if (userId.isNotEmpty()) {
+            roomsRef.child(roomId).child("participants").child(userId).child("hasVoted").setValue(true)
         }
         
-        val choicesRef = roomsRef.child(roomId).child("choices")
+        if (likedChoiceIds.isEmpty()) {
+            return Result.success(Unit)
+        }
         
-        var completedCount = 0
-        var hasFailed = false
-        
-        likedChoiceIds.forEach { choiceId ->
+        return suspendCancellableCoroutine { continuation ->
+            val choicesRef = roomsRef.child(roomId).child("choices")
+            
+            var completedCount = 0
+            var hasFailed = false
+            
+            likedChoiceIds.forEach { choiceId ->
             choicesRef.child(choiceId).child("voteCount").runTransaction(object : Transaction.Handler {
                 override fun doTransaction(currentData: MutableData): Transaction.Result {
                     val currentVotes = currentData.getValue(Int::class.java) ?: 0
@@ -228,6 +234,7 @@ class RoomRepositoryImpl @Inject constructor(
             })
         }
     }
+}
 
     override suspend fun endVotingAndSetWinner(roomId: String, winnerChoiceId: String): Result<Unit> = suspendCancellableCoroutine { continuation ->
         val roomRef = roomsRef.child(roomId)

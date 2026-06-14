@@ -25,6 +25,8 @@ let choicesList = [];
 let currentCardIndex = 0;
 let likedChoiceIds = [];
 let votesSubmitted = false;
+let timerInterval = null;
+let timeLeft = 0;
 
 // DOM Elements
 const screenJoin = document.getElementById("screen-join");
@@ -158,6 +160,17 @@ function observeRoom() {
             return;
         }
 
+        // Update real-time voter completion counts if in voting state
+        if (roomData.participants) {
+            const participants = Object.values(roomData.participants);
+            const total = participants.length;
+            const finishedCount = participants.filter(p => p.hasVoted).length;
+            const countText = document.getElementById("web-finished-count");
+            if (countText) {
+                countText.textContent = `Tamamlanan: ${finishedCount} / ${total}`;
+            }
+        }
+
         // Check state transitions
         handleRoomStateChange();
     });
@@ -240,6 +253,34 @@ function initVotingScreen() {
     choicesList.sort((a, b) => a.id.localeCompare(b.id));
 
     updateVotingProgress();
+
+    // Start timer interval if not already started
+    if (!timerInterval && choicesList.length > 0) {
+        timeLeft = choicesList.length * 5;
+        const timerBadge = document.getElementById("voting-timer");
+        timerBadge.textContent = "Kalan Süre: " + timeLeft + "s";
+        timerBadge.classList.remove("warning");
+        timerBadge.classList.remove("hidden");
+        
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            timerBadge.textContent = "Kalan Süre: " + timeLeft + "s";
+            
+            if (timeLeft <= 5) {
+                timerBadge.classList.add("warning");
+            } else {
+                timerBadge.classList.remove("warning");
+            }
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                currentCardIndex = choicesList.length;
+                updateVotingProgress();
+                showVotingFinished();
+            }
+        }, 1000);
+    }
 
     // If we've already swiped or finished
     if (currentCardIndex >= choicesList.length) {
@@ -364,10 +405,10 @@ function initCardDrag(card) {
         // Evaluate swipe
         if (currentX > swipeThreshold) {
             // Swipe Right (Like)
-            swipeCardAction(card, "right");
+            swipeCardAction(card, "right", currentY);
         } else if (currentX < -swipeThreshold) {
             // Swipe Left (Dislike)
-            swipeCardAction(card, "left");
+            swipeCardAction(card, "left", currentY);
         } else {
             // Reset position
             card.style.transform = "";
@@ -379,9 +420,9 @@ function initCardDrag(card) {
 }
 
 // Swipe animation and state update
-function swipeCardAction(card, direction) {
+function swipeCardAction(card, direction, yVal = 0) {
     const flyOutX = direction === "right" ? window.innerWidth : -window.innerWidth;
-    card.style.transform = `translate(${flyOutX}px, ${currentY}px) rotate(${direction === "right" ? 30 : -30}deg)`;
+    card.style.transform = `translate(${flyOutX}px, ${yVal}px) rotate(${direction === "right" ? 30 : -30}deg)`;
     card.style.transition = "transform 0.4s ease-out";
     
     const choiceId = card.dataset.id;
@@ -405,19 +446,31 @@ function swipeCardAction(card, direction) {
 btnLike.addEventListener("click", () => {
     const card = cardContainer.querySelector(".swipe-card");
     if (card) {
-        swipeCardAction(card, "right");
+        swipeCardAction(card, "right", 0);
     }
 });
 
 btnDislike.addEventListener("click", () => {
     const card = cardContainer.querySelector(".swipe-card");
     if (card) {
-        swipeCardAction(card, "left");
+        swipeCardAction(card, "left", 0);
     }
 });
 
 // Submit user votes and display wait message
 function showVotingFinished() {
+    // Clear timer interval
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+    
+    // Hide timer badge
+    const timerBadge = document.getElementById("voting-timer");
+    if (timerBadge) {
+        timerBadge.classList.add("hidden");
+    }
+
     cardContainer.innerHTML = "";
     votingActions.classList.add("hidden");
     votingFinishedPlaceholder.classList.remove("hidden");
@@ -430,6 +483,9 @@ function showVotingFinished() {
 }
 
 function submitVotesToFirebase() {
+    // Write hasVoted = true to Firebase for this participant
+    database.ref("rooms/" + roomId + "/participants/" + userId + "/hasVoted").set(true);
+
     if (likedChoiceIds.length === 0) return;
     
     const choicesRef = database.ref("rooms/" + roomId + "/choices");

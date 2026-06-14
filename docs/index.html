@@ -79,7 +79,10 @@
         <!-- Screen 3: Voting (Tinder Swipe) -->
         <section id="screen-voting" class="screen">
             <div class="header">
-                <span class="badge">Oylama Başladı</span>
+                <div class="voting-header-row">
+                    <span class="badge">Oylama Başladı</span>
+                    <span id="voting-timer" class="voting-timer-badge">Kalan Süre: 0s</span>
+                </div>
                 <div class="progress-bar-container">
                     <div id="voting-progress" class="progress-text">0 / 0</div>
                     <div class="progress-track">
@@ -98,7 +101,8 @@
                 <div class="finished-content">
                     <span class="finished-emoji">🎉</span>
                     <h2>Oylamayı Bitirdin!</h2>
-                    <p>Oyların kaydedildi. Diğer katılımcıların oylamayı tamamlaması ve host'un sonuçları açıklaması bekleniyor...</p>
+                    <p id="voting-finished-text">Oyların kaydedildi. Diğer katılımcıların oylamayı tamamlaması bekleniyor...</p>
+                    <p id="web-finished-count" class="finished-count-text">Tamamlanan: 0/0</p>
                     <div class="loader-ring"></div>
                 </div>
             </div>

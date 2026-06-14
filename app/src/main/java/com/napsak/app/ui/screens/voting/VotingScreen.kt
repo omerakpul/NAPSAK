@@ -63,9 +63,31 @@ fun VotingScreen(
     val currentRoom by sharedViewModel.currentRoom.collectAsState()
     val winnerChoice by sharedViewModel.winnerChoice.collectAsState()
 
+    // Countdown Timer State (5 seconds per choice)
+    var timeLeft by remember(choices.size) { mutableIntStateOf(if (choices.isNotEmpty()) choices.size * 5 else 30) }
+
     // Oylama ekranı açıldığında oda güncellemelerini takip et
     LaunchedEffect(roomId) {
         sharedViewModel.observeRoom(roomId)
+    }
+
+    // Countdown Timer Effect
+    LaunchedEffect(timeLeft, currentIndex, choices.size) {
+        if (choices.isNotEmpty() && timeLeft > 0 && currentIndex < choices.size) {
+            kotlinx.coroutines.delay(1000L)
+            timeLeft--
+        } else if (choices.isNotEmpty() && timeLeft == 0 && currentIndex < choices.size) {
+            // Time's up! Force finish voting
+            currentIndex = choices.size
+        }
+    }
+
+    // Background Submit Votes Effect (When finished)
+    LaunchedEffect(currentIndex, choices.size) {
+        if (choices.isNotEmpty() && currentIndex >= choices.size && !votesSubmitted) {
+            votesSubmitted = true
+            sharedViewModel.submitVotes(roomId, likedChoices.map { it.id })
+        }
     }
 
     // Oda durumu RESULT olduğunda ve kazanan belli olduğunda otomatik olarak sonuç ekranına yönlendir
@@ -93,15 +115,29 @@ fun VotingScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Progress Indicators
-            Text(
-                text = "SEÇENEKLERİ SWIPE'LA",
-                style = MaterialTheme.typography.titleSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    letterSpacing = 2.sp
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "SEÇENEKLERİ SWIPE'LA",
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        letterSpacing = 2.sp
+                    )
                 )
-            )
+                if (currentIndex < choices.size) {
+                    Text(
+                        text = "Kalan Süre: ${timeLeft}s",
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = if (timeLeft <= 5) Color.Red else MaterialTheme.colorScheme.primary
+                        )
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(4.dp))
 
@@ -138,10 +174,17 @@ fun VotingScreen(
                     )
                 } else if (choices.isNotEmpty()) {
                     // Voting Finished state
+                    val room = currentRoom
+                    val participantsList = room?.participants?.values?.toList() ?: emptyList()
+                    val totalParticipants = participantsList.size
+                    val finishedCount = participantsList.count { it.hasVoted }
+                    val allVoted = participantsList.isNotEmpty() && participantsList.all { it.hasVoted }
+                    val isHost = room?.hostId == sharedViewModel.currentUserId.value
+
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize().padding(24.dp)
                     ) {
                         Text(
                             text = "🎉",
@@ -161,31 +204,40 @@ fun VotingScreen(
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                             ),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 24.dp)
+                            textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(24.dp))
-                        val coroutineScope = rememberCoroutineScope()
-                        Button(
-                            onClick = {
-                                val room = currentRoom ?: return@Button
-                                val isHost = room.hostId == sharedViewModel.currentUserId.value
-                                
-                                if (isHost) {
-                                    // Combine database choices with host's own liked choices
-                                    val dbChoices = room.choices.values.toList()
-                                    val finalChoices = dbChoices.map { choice ->
-                                        val isLikedByHost = likedChoices.any { it.id == choice.id }
-                                        val additionalVote = if (isLikedByHost) 1 else 0
-                                        choice.copy(voteCount = choice.voteCount + additionalVote)
-                                    }
+
+                        if (isHost) {
+                            Text(
+                                text = if (allVoted) "Herkes oylamayı tamamladı!" else "Diğer katılımcıların oylamayı bitirmesi bekleniyor...",
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (allVoted) CoralPrimary else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                                ),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Tamamlanan: $finishedCount / $totalParticipants",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            val coroutineScope = rememberCoroutineScope()
+                            Button(
+                                onClick = {
+                                    val currentRoomVal = room ?: return@Button
                                     
-                                    val maxVotes = finalChoices.maxOfOrNull { it.voteCount } ?: 0
+                                    val dbChoices = currentRoomVal.choices.values.toList()
+                                    val maxVotes = dbChoices.maxOfOrNull { it.voteCount } ?: 0
                                     
                                     val candidates = if (maxVotes > 0) {
-                                        finalChoices.filter { it.voteCount == maxVotes }
+                                        dbChoices.filter { it.voteCount == maxVotes }
                                     } else {
-                                        finalChoices
+                                        dbChoices
                                     }
                                     
                                     val winner = candidates.random()
@@ -213,34 +265,43 @@ fun VotingScreen(
                                             animatingChoice = winner
                                             kotlinx.coroutines.delay(1000L)
                                             
-                                            if (!votesSubmitted) {
-                                                votesSubmitted = true
-                                                sharedViewModel.submitVotesAndDeclareWinner(roomId, likedChoices.toList(), winner) {
-                                                    isSelectingWinner = false
-                                                    onNavigateToResult(roomId)
-                                                }
-                                            }
-                                        }
-                                    } else {
-                                        if (!votesSubmitted) {
-                                            votesSubmitted = true
-                                            sharedViewModel.submitVotesAndDeclareWinner(roomId, likedChoices.toList(), winner) {
+                                            sharedViewModel.declareWinner(roomId, winner) {
+                                                isSelectingWinner = false
                                                 onNavigateToResult(roomId)
                                             }
                                         }
-                                    }
-                                } else {
-                                    if (!votesSubmitted) {
-                                        votesSubmitted = true
-                                        sharedViewModel.submitVotesAndDeclareWinner(roomId, likedChoices.toList(), null) {
+                                    } else {
+                                        sharedViewModel.declareWinner(roomId, winner) {
                                             onNavigateToResult(roomId)
                                         }
                                     }
-                                }
-                            },
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Text("Sonuçları Gör")
+                                },
+                                enabled = allVoted,
+                                shape = RoundedCornerShape(14.dp)
+                            ) {
+                                Text("Sonuçları Gör")
+                            }
+                        } else {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(32.dp),
+                                color = CoralPrimary,
+                                strokeWidth = 3.dp
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Diğer katılımcıların oylamayı tamamlaması bekleniyor...",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                                ),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Tamamlanan: $finishedCount / $totalParticipants",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                                )
+                            )
                         }
                     }
                 }

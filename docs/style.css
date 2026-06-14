@@ -735,3 +735,40 @@ h2 {
 #screen-lobby .card.glass {
     margin-bottom: 12px;
 }
+
+/* Voting Timer and Progress Details */
+.voting-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.voting-timer-badge {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary);
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.2);
+    padding: 6px 12px;
+    border-radius: 100px;
+}
+
+.voting-timer-badge.warning {
+    color: #FF5252;
+    background: rgba(255, 82, 82, 0.1);
+    border-color: rgba(255, 82, 82, 0.2);
+    animation: pulse 1s infinite;
+}
+
+.finished-count-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}

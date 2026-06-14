@@ -13,7 +13,8 @@ enum class RoomState {
 data class Participant(
     val id: String = "",
     val name: String = "",
-    val isReady: Boolean = false
+    val isReady: Boolean = false,
+    val hasVoted: Boolean = false
 )
 
 @Serializable

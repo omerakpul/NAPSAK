@@ -105,6 +105,14 @@ class SharedSessionViewModel @Inject constructor(
         }
     }
 
+    fun declareWinner(roomId: String, winner: Choice, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            endVotingUseCase(roomId, winner.id)
+            _winnerChoice.value = winner
+            onComplete()
+        }
+    }
+
     fun clear() {
         _choices.value = emptyList()
         _winnerChoice.value = null
