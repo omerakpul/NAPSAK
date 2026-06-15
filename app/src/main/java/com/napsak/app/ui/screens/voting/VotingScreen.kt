@@ -217,7 +217,7 @@ fun VotingScreen(
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxSize().padding(24.dp)
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 24.dp)
                     ) {
                         Text(
                             text = "🎉",
@@ -248,7 +248,9 @@ fun VotingScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = CoralPrimary
                                 ),
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                softWrap = false
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
