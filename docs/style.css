@@ -1,31 +1,35 @@
 /* Global Styles and Design System */
 :root {
-    --primary: #818CF8;
-    --primary-dark: #6366F1;
-    --primary-glow: rgba(129, 140, 248, 0.4);
-    --secondary: #FBBF24;
+    --primary: #FF6B35;
+    --primary-dark: #E0521D;
+    --primary-glow: rgba(255, 107, 53, 0.4);
+    --secondary: #7209B7;
     --success: #10AC84;
     --success-glow: rgba(16, 172, 132, 0.3);
     --danger: #EF4444;
     --danger-glow: rgba(239, 68, 68, 0.3);
     
-    --bg-dark: #0B0F19;
-    --surface: rgba(21, 29, 48, 0.6);
-    --surface-border: rgba(255, 255, 255, 0.06);
+    --bg-dark: #12161A;
+    --surface: rgba(27, 33, 39, 0.6);
+    --surface-border: rgba(255, 255, 255, 0.05);
     --text-primary: #FFFFFF;
     --text-secondary: rgba(255, 255, 255, 0.7);
     --text-muted: rgba(255, 255, 255, 0.4);
     
     --gradient: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-    --gradient-glow: linear-gradient(135deg, rgba(129, 140, 248, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%);
+    --gradient-glow: linear-gradient(135deg, rgba(255, 107, 53, 0.15) 0%, rgba(224, 82, 29, 0.15) 100%);
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3, h4, h5, h6, .brand-title {
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 body {
