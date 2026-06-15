@@ -54,7 +54,7 @@ class UserPreferencesDataSource @Inject constructor(
                 emptyList()
             }
         } else {
-            emptyList()
+            getDefaultLists()
         }
     }
 
@@ -63,6 +63,54 @@ class UserPreferencesDataSource @Inject constructor(
             preferences[KEY_USER_ID] = userId
             preferences[KEY_USERNAME] = username
         }
+    }
+
+    private fun getDefaultLists(): List<SavedChoiceList> {
+        return listOf(
+            SavedChoiceList(
+                id = "preset-yemek",
+                name = "🍔 Yemek",
+                choices = listOf(
+                    Choice(id = "y1", name = "Pizzacı", details = "Taş fırında İtalyan pizzası", category = "Yemek"),
+                    Choice(id = "y2", name = "Burgerci", details = "Gurme hamburgerler ve çıtır patates", category = "Yemek"),
+                    Choice(id = "y3", name = "Kebapçı", details = "Zengin meze ve enfes Adana kebap", category = "Yemek"),
+                    Choice(id = "y4", name = "Sushi Bar", details = "Uzak doğu lezzetleri ve taze roll'lar", category = "Yemek"),
+                    Choice(id = "y5", name = "Starbucks", details = "Kahve ve leziz tatlı molası", category = "Yemek")
+                )
+            ),
+            SavedChoiceList(
+                id = "preset-aktivite",
+                name = "🎬 Aktivite",
+                choices = listOf(
+                    Choice(id = "a1", name = "Bowling", details = "Grupça bowling turnuvası", category = "Aktivite"),
+                    Choice(id = "a2", name = "Sinema", details = "Vizyondaki en yeni aksiyon filmi", category = "Aktivite"),
+                    Choice(id = "a3", name = "Kafe Sohbeti", details = "Loş bir kafede koyu muhabbet", category = "Aktivite"),
+                    Choice(id = "a4", name = "Konser", details = "Açık hava rock konseri coşkusu", category = "Aktivite"),
+                    Choice(id = "a5", name = "Tiyatro", details = "Sezonun popüler komedi oyunu", category = "Aktivite")
+                )
+            ),
+            SavedChoiceList(
+                id = "preset-film",
+                name = "🍿 Film",
+                choices = listOf(
+                    Choice(id = "f1", name = "Bilim Kurgu", details = "Yıldızlararası yolculuk ve uzay temalı", category = "Film"),
+                    Choice(id = "f2", name = "Komedi", details = "Gülme garantili yerli komedi", category = "Film"),
+                    Choice(id = "f3", name = "Korku", details = "Gerilim dolu karanlık bir ev hikayesi", category = "Film"),
+                    Choice(id = "f4", name = "Aksiyon / Macera", details = "Nefes kesen kovalamaca ve dövüş sahneleri", category = "Film"),
+                    Choice(id = "f5", name = "Romantik", details = "Duygusal ve sıcak bir aşk öyküsü", category = "Film")
+                )
+            ),
+            SavedChoiceList(
+                id = "preset-eglence",
+                name = "🎮 Eğlence",
+                choices = listOf(
+                    Choice(id = "e1", name = "PlayStation Kafe", details = "FC 24 ve dövüş oyunları kapışması", category = "Eğlence"),
+                    Choice(id = "e2", name = "Karaoke", details = "Detone olmayı göze alanlar kulübü", category = "Eğlence"),
+                    Choice(id = "e3", name = "Kutu Oyunları (Boardgames)", details = "Catan, Tabu veya Monopoly gecesi", category = "Eğlence"),
+                    Choice(id = "e4", name = "Bilardo / Dart", details = "Hassas atışlar ve rekabet", category = "Eğlence")
+                )
+            )
+        )
     }
 
     suspend fun saveChoiceList(name: String, choices: List<Choice>) {
@@ -75,7 +123,7 @@ class UserPreferencesDataSource @Inject constructor(
                     mutableListOf()
                 }
             } else {
-                mutableListOf()
+                getDefaultLists().toMutableList()
             }
 
             val newList = SavedChoiceList(
@@ -89,18 +137,46 @@ class UserPreferencesDataSource @Inject constructor(
         }
     }
 
+    suspend fun updateChoiceList(listId: String, name: String, choices: List<Choice>) {
+        context.dataStore.edit { preferences ->
+            val jsonStr = preferences[KEY_SAVED_LISTS]
+            val currentLists = if (jsonStr != null) {
+                try {
+                    Json.decodeFromString<List<SavedChoiceList>>(jsonStr).toMutableList()
+                } catch (e: Exception) {
+                    mutableListOf()
+                }
+            } else {
+                getDefaultLists().toMutableList()
+            }
+
+            val index = currentLists.indexOfFirst { it.id == listId }
+            if (index != -1) {
+                currentLists[index] = SavedChoiceList(
+                    id = listId,
+                    name = name,
+                    choices = choices
+                )
+                preferences[KEY_SAVED_LISTS] = Json.encodeToString(currentLists.toList())
+            }
+        }
+    }
+
     suspend fun deleteChoiceList(listId: String) {
         context.dataStore.edit { preferences ->
             val jsonStr = preferences[KEY_SAVED_LISTS]
-            if (jsonStr != null) {
+            val currentLists = if (jsonStr != null) {
                 try {
-                    val currentLists = Json.decodeFromString<List<SavedChoiceList>>(jsonStr)
-                    val updatedLists = currentLists.filter { it.id != listId }
-                    preferences[KEY_SAVED_LISTS] = Json.encodeToString(updatedLists)
+                    Json.decodeFromString<List<SavedChoiceList>>(jsonStr).toMutableList()
                 } catch (e: Exception) {
-                    // Ignore
+                    mutableListOf()
                 }
+            } else {
+                getDefaultLists().toMutableList()
             }
+
+            val updatedLists = currentLists.filter { it.id != listId }
+            preferences[KEY_SAVED_LISTS] = Json.encodeToString(updatedLists)
         }
     }
 }

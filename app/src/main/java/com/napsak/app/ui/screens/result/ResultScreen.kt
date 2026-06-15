@@ -147,59 +147,105 @@ fun ResultScreen(
                     ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        // Image
-                        AsyncImage(
-                            model = winner.imageUrl,
-                            contentDescription = winner.name,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                        )
+                    if (!winner.imageUrl.isNullOrBlank()) {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            // Image
+                            AsyncImage(
+                                model = winner.imageUrl,
+                                contentDescription = winner.name,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                            )
 
-                        // Info
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                            // Info
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp)
                             ) {
-                                Text(
-                                    text = winner.name,
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.ExtraBold,
-                                        fontSize = 24.sp
-                                    ),
-                                    modifier = Modifier.weight(1f)
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = winner.name,
+                                        style = MaterialTheme.typography.titleLarge.copy(
+                                            fontWeight = FontWeight.ExtraBold,
+                                            fontSize = 24.sp
+                                        ),
+                                        modifier = Modifier.weight(1f)
+                                    )
 
-                                SuggestionChip(
-                                    onClick = {},
-                                    label = {
-                                        Text(
-                                            text = if (isRaffleActive) "? Oy" else "${winner.voteCount} Oy",
-                                            fontWeight = FontWeight.Bold,
-                                            color = CoralPrimary
-                                        )
-                                    },
-                                    shape = RoundedCornerShape(8.dp)
+                                    SuggestionChip(
+                                        onClick = {},
+                                        label = {
+                                            Text(
+                                                text = if (isRaffleActive) "? Oy" else "${winner.voteCount} Oy",
+                                                fontWeight = FontWeight.Bold,
+                                                color = CoralPrimary
+                                            )
+                                        },
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text(
+                                    text = if (isRaffleActive) "Kura çekimi yapılıyor..." else winner.details,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    )
                                 )
                             }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
+                        }
+                    } else {
+                        // Centered contents for no-image card
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
                             Text(
-                                text = if (isRaffleActive) "Kura çekimi yapılıyor..." else winner.details,
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                text = winner.name,
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    textAlign = TextAlign.Center,
+                                    fontSize = 28.sp
                                 )
                             )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            SuggestionChip(
+                                onClick = {},
+                                label = {
+                                    Text(
+                                        text = if (isRaffleActive) "? Oy" else "${winner.voteCount} Oy",
+                                        fontWeight = FontWeight.Bold,
+                                        color = CoralPrimary,
+                                        fontSize = 16.sp
+                                    )
+                                },
+                                shape = RoundedCornerShape(8.dp)
+                            )
+
+                            if (winner.details.isNotBlank() || isRaffleActive) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = if (isRaffleActive) "Kura çekimi yapılıyor..." else winner.details,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                        textAlign = TextAlign.Center
+                                    )
+                                )
+                            }
                         }
                     }
                 }

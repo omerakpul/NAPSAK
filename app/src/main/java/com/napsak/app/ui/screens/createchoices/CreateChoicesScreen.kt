@@ -5,6 +5,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
@@ -50,6 +52,8 @@ fun CreateChoicesScreen(
         colors = listOf(CoralPrimary, CoralPrimaryDark)
     )
 
+    val scrollState = rememberScrollState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -58,6 +62,7 @@ fun CreateChoicesScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(scrollState)
                 .padding(24.dp)
         ) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -328,8 +333,8 @@ fun CreateChoicesScreen(
             if (uiState.choices.isEmpty()) {
                 Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .padding(vertical = 40.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -356,30 +361,23 @@ fun CreateChoicesScreen(
                 }
             } else {
                 val groupedChoices = uiState.choices.groupBy { it.category }
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     groupedChoices.forEach { (category, choicesInCategory) ->
-                        item(key = "header_${category}") {
-                            Text(
-                                text = if (category.isBlank()) "GENEL" else category.uppercase(),
-                                style = MaterialTheme.typography.labelLarge.copy(
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = if (category.isBlank()) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f) else CoralPrimary,
-                                    letterSpacing = 1.sp
-                                ),
-                                modifier = Modifier.padding(top = 10.dp, bottom = 4.dp)
-                            )
-                        }
-                        itemsIndexed(
-                            items = choicesInCategory,
-                            key = { _, choice -> choice.id }
-                        ) { index, choice ->
+                        Text(
+                            text = if (category.isBlank()) "GENEL" else category.uppercase(),
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                color = if (category.isBlank()) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f) else CoralPrimary,
+                                letterSpacing = 1.sp
+                            ),
+                            modifier = Modifier.padding(top = 10.dp, bottom = 4.dp)
+                        )
+                        choicesInCategory.forEachIndexed { idx, choice ->
                             ChoiceListItem(
-                                index = index + 1,
+                                index = idx + 1,
                                 choice = choice,
                                 onEdit = { viewModel.startEditing(choice) },
                                 onRemove = { viewModel.removeChoice(choice.id) }
