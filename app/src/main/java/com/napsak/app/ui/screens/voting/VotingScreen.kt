@@ -248,18 +248,33 @@ fun VotingScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = CoralPrimary
                                 ),
-                                textAlign = TextAlign.Center,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = if (countdownTime > 0) "$countdownTime" else "Hesaplanıyor...",
-                                fontSize = 56.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = CoralPrimary,
                                 textAlign = TextAlign.Center
                             )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            if (countdownTime > 0) {
+                                Text(
+                                    text = "$countdownTime",
+                                    fontSize = 56.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = CoralPrimary,
+                                    textAlign = TextAlign.Center
+                                )
+                            } else {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(40.dp),
+                                    color = CoralPrimary,
+                                    strokeWidth = 3.dp
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "Hesaplanıyor...",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = CoralPrimary
+                                    ),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                         } else {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(36.dp),

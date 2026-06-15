@@ -59,15 +59,15 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun saveChoiceList(name: String, choices: List<Choice>) {
+    fun saveChoiceList(name: String, category: String, choices: List<Choice>, imageUrl: String? = null) {
         viewModelScope.launch {
-            userPreferencesDataSource.saveChoiceList(name.trim(), choices)
+            userPreferencesDataSource.saveChoiceList(name.trim(), category.trim(), choices, imageUrl)
         }
     }
 
-    fun updateChoiceList(listId: String, name: String, choices: List<Choice>) {
+    fun updateChoiceList(listId: String, name: String, category: String, choices: List<Choice>, imageUrl: String? = null) {
         viewModelScope.launch {
-            userPreferencesDataSource.updateChoiceList(listId, name.trim(), choices)
+            userPreferencesDataSource.updateChoiceList(listId, name.trim(), category.trim(), choices, imageUrl)
         }
     }
 

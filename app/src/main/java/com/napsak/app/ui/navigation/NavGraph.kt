@@ -11,6 +11,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.napsak.app.ui.screens.createchoices.CreateChoicesScreen
 import com.napsak.app.ui.screens.home.HomeScreen
+import com.napsak.app.ui.screens.lists.ListsScreen
+import com.napsak.app.ui.screens.lists.EditListScreen
 import com.napsak.app.ui.screens.lobby.LobbyScreen
 import com.napsak.app.ui.screens.shared.SharedSessionViewModel
 import com.napsak.app.ui.screens.voting.VotingScreen
@@ -31,6 +33,22 @@ fun NapsakNavGraph(
             HomeScreen(
                 onNavigateToLobby = { roomId ->
                     navController.navigate(Screen.Lobby(roomId))
+                }
+            )
+        }
+        composable<Screen.Lists> {
+            ListsScreen(
+                onNavigateToEditList = { listId ->
+                    navController.navigate(Screen.EditList(listId))
+                }
+            )
+        }
+        composable<Screen.EditList> { backStackEntry ->
+            val editList = backStackEntry.toRoute<Screen.EditList>()
+            EditListScreen(
+                listId = editList.listId,
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }

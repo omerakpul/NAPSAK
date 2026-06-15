@@ -7,6 +7,12 @@ sealed interface Screen {
     data object Home : Screen
 
     @Serializable
+    data object Lists : Screen
+
+    @Serializable
+    data class EditList(val listId: String = "") : Screen
+
+    @Serializable
     data class Lobby(val roomId: String) : Screen
 
     @Serializable

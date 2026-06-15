@@ -20,6 +20,9 @@ data class CreateChoicesUiState(
     val currentName: String = "",
     val currentDetails: String = "",
     val currentCategory: String = "",
+    val currentImageUrl: String = "",
+    val currentLatitude: String = "",
+    val currentLongitude: String = "",
     val isEditing: Boolean = false,
     val editingChoiceId: String? = null,
     val savedLists: List<SavedChoiceList> = emptyList()
@@ -54,6 +57,18 @@ class CreateChoicesViewModel @Inject constructor(
         _uiState.update { it.copy(currentCategory = category) }
     }
 
+    fun onImageUrlChange(imageUrl: String) {
+        _uiState.update { it.copy(currentImageUrl = imageUrl) }
+    }
+
+    fun onLatitudeChange(latitude: String) {
+        _uiState.update { it.copy(currentLatitude = latitude) }
+    }
+
+    fun onLongitudeChange(longitude: String) {
+        _uiState.update { it.copy(currentLongitude = longitude) }
+    }
+
     fun addChoice() {
         val state = _uiState.value
         if (state.currentName.isBlank()) return
@@ -62,7 +77,10 @@ class CreateChoicesViewModel @Inject constructor(
             id = UUID.randomUUID().toString(),
             name = state.currentName.trim(),
             details = state.currentDetails.trim(),
-            category = state.currentCategory.trim()
+            category = state.currentCategory.trim(),
+            imageUrl = state.currentImageUrl.trim().takeIf { it.isNotBlank() },
+            latitude = state.currentLatitude.trim().toDoubleOrNull(),
+            longitude = state.currentLongitude.trim().toDoubleOrNull()
         )
 
         _uiState.update {
@@ -70,7 +88,10 @@ class CreateChoicesViewModel @Inject constructor(
                 choices = it.choices + newChoice,
                 currentName = "",
                 currentDetails = "",
-                currentCategory = ""
+                currentCategory = "",
+                currentImageUrl = "",
+                currentLatitude = "",
+                currentLongitude = ""
             )
         }
     }
@@ -78,6 +99,16 @@ class CreateChoicesViewModel @Inject constructor(
     fun removeChoice(choiceId: String) {
         _uiState.update {
             it.copy(choices = it.choices.filter { c -> c.id != choiceId })
+        }
+    }
+
+    fun updateChoiceImageUrl(choiceId: String, imageUrl: String) {
+        _uiState.update { state ->
+            state.copy(
+                choices = state.choices.map { c ->
+                    if (c.id == choiceId) c.copy(imageUrl = imageUrl.takeIf { it.isNotBlank() }) else c
+                }
+            )
         }
     }
 
@@ -94,7 +125,10 @@ class CreateChoicesViewModel @Inject constructor(
                 editingChoiceId = choice.id,
                 currentName = choice.name,
                 currentDetails = choice.details,
-                currentCategory = choice.category
+                currentCategory = choice.category,
+                currentImageUrl = choice.imageUrl ?: "",
+                currentLatitude = choice.latitude?.toString() ?: "",
+                currentLongitude = choice.longitude?.toString() ?: ""
             )
         }
     }
@@ -110,7 +144,10 @@ class CreateChoicesViewModel @Inject constructor(
                         c.copy(
                             name = state.currentName.trim(),
                             details = state.currentDetails.trim(),
-                            category = state.currentCategory.trim()
+                            category = state.currentCategory.trim(),
+                            imageUrl = state.currentImageUrl.trim().takeIf { it.isNotBlank() },
+                            latitude = state.currentLatitude.trim().toDoubleOrNull(),
+                            longitude = state.currentLongitude.trim().toDoubleOrNull()
                         )
                     } else c
                 },
@@ -118,7 +155,10 @@ class CreateChoicesViewModel @Inject constructor(
                 editingChoiceId = null,
                 currentName = "",
                 currentDetails = "",
-                currentCategory = ""
+                currentCategory = "",
+                currentImageUrl = "",
+                currentLatitude = "",
+                currentLongitude = ""
             )
         }
     }
@@ -130,42 +170,19 @@ class CreateChoicesViewModel @Inject constructor(
                 editingChoiceId = null,
                 currentName = "",
                 currentDetails = "",
-                currentCategory = ""
+                currentCategory = "",
+                currentImageUrl = "",
+                currentLatitude = "",
+                currentLongitude = ""
             )
         }
     }
 
     fun loadPresetTemplate(templateName: String) {
-        val presetChoices = when (templateName) {
-            "Yemek" -> listOf(
-                Choice(id = UUID.randomUUID().toString(), name = "Pizzacı", details = "Taş fırında İtalyan pizzası", category = "Yemek"),
-                Choice(id = UUID.randomUUID().toString(), name = "Burgerci", details = "Gurme hamburgerler ve çıtır patates", category = "Yemek"),
-                Choice(id = UUID.randomUUID().toString(), name = "Kebapçı", details = "Zengin meze ve enfes Adana kebap", category = "Yemek"),
-                Choice(id = UUID.randomUUID().toString(), name = "Sushi Bar", details = "Uzak doğu lezzetleri ve taze roll'lar", category = "Yemek"),
-                Choice(id = UUID.randomUUID().toString(), name = "Starbucks", details = "Kahve ve leziz tatlı molası", category = "Yemek")
-            )
-            "Aktivite" -> listOf(
-                Choice(id = UUID.randomUUID().toString(), name = "Bowling", details = "Grupça bowling turnuvası", category = "Aktivite"),
-                Choice(id = UUID.randomUUID().toString(), name = "Sinema", details = "Vizyondaki en yeni aksiyon filmi", category = "Aktivite"),
-                Choice(id = UUID.randomUUID().toString(), name = "Kafe Sohbeti", details = "Loş bir kafede koyu muhabbet", category = "Aktivite"),
-                Choice(id = UUID.randomUUID().toString(), name = "Konser", details = "Açık hava rock konseri coşkusu", category = "Aktivite"),
-                Choice(id = UUID.randomUUID().toString(), name = "Tiyatro", details = "Sezonun popüler komedi oyunu", category = "Aktivite")
-            )
-            "Film" -> listOf(
-                Choice(id = UUID.randomUUID().toString(), name = "Bilim Kurgu", details = "Yıldızlararası yolculuk ve uzay temalı", category = "Film"),
-                Choice(id = UUID.randomUUID().toString(), name = "Komedi", details = "Gülme garantili yerli komedi", category = "Film"),
-                Choice(id = UUID.randomUUID().toString(), name = "Korku", details = "Gerilim dolu karanlık bir ev hikayesi", category = "Film"),
-                Choice(id = UUID.randomUUID().toString(), name = "Aksiyon / Macera", details = "Nefes kesen kovalamaca ve dövüş sahneleri", category = "Film"),
-                Choice(id = UUID.randomUUID().toString(), name = "Romantik", details = "Duygusal ve sıcak bir aşk öyküsü", category = "Film")
-            )
-            "Eğlence" -> listOf(
-                Choice(id = UUID.randomUUID().toString(), name = "PlayStation Kafe", details = "FC 24 ve dövüş oyunları kapışması", category = "Eğlence"),
-                Choice(id = UUID.randomUUID().toString(), name = "Karaoke", details = "Detone olmayı göze alanlar kulübü", category = "Eğlence"),
-                Choice(id = UUID.randomUUID().toString(), name = "Kutu Oyunları (Boardgames)", details = "Catan, Tabu veya Monopoly gecesi", category = "Eğlence"),
-                Choice(id = UUID.randomUUID().toString(), name = "Bilardo / Dart", details = "Hassas atışlar ve rekabet", category = "Eğlence")
-            )
-            else -> emptyList()
-        }
+        val preset = userPreferencesDataSource.getDefaultLists().find { it.category == templateName }
+        val presetChoices = preset?.choices?.map {
+            it.copy(id = UUID.randomUUID().toString())
+        } ?: emptyList()
 
         if (presetChoices.isNotEmpty()) {
             _uiState.update {
@@ -181,11 +198,11 @@ class CreateChoicesViewModel @Inject constructor(
         }
     }
 
-    fun saveChoiceList(name: String) {
+    fun saveChoiceList(name: String, category: String = "", imageUrl: String? = null) {
         viewModelScope.launch {
             val currentChoices = _uiState.value.choices
             if (currentChoices.isNotEmpty() && name.isNotBlank()) {
-                userPreferencesDataSource.saveChoiceList(name.trim(), currentChoices)
+                userPreferencesDataSource.saveChoiceList(name.trim(), category.trim(), currentChoices, imageUrl)
             }
         }
     }
@@ -221,4 +238,6 @@ class CreateChoicesViewModel @Inject constructor(
     }
 
     fun getChoices(): List<Choice> = _uiState.value.choices
+
+    fun getDefaultLists(): List<SavedChoiceList> = userPreferencesDataSource.getDefaultLists()
 }

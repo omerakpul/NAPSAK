@@ -44,5 +44,7 @@ data class Room(
 data class SavedChoiceList(
     val id: String = "",
     val name: String = "",
-    val choices: List<Choice> = emptyList()
+    val category: String = "",
+    val choices: List<Choice> = emptyList(),
+    val imageUrl: String? = null
 )

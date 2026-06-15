@@ -65,11 +65,12 @@ class UserPreferencesDataSource @Inject constructor(
         }
     }
 
-    private fun getDefaultLists(): List<SavedChoiceList> {
+    fun getDefaultLists(): List<SavedChoiceList> {
         return listOf(
             SavedChoiceList(
                 id = "preset-yemek",
-                name = "🍔 Yemek",
+                name = "Yemek",
+                category = "Yemek",
                 choices = listOf(
                     Choice(id = "y1", name = "Pizzacı", details = "Taş fırında İtalyan pizzası", category = "Yemek"),
                     Choice(id = "y2", name = "Burgerci", details = "Gurme hamburgerler ve çıtır patates", category = "Yemek"),
@@ -80,7 +81,8 @@ class UserPreferencesDataSource @Inject constructor(
             ),
             SavedChoiceList(
                 id = "preset-aktivite",
-                name = "🎬 Aktivite",
+                name = "Aktivite",
+                category = "Aktivite",
                 choices = listOf(
                     Choice(id = "a1", name = "Bowling", details = "Grupça bowling turnuvası", category = "Aktivite"),
                     Choice(id = "a2", name = "Sinema", details = "Vizyondaki en yeni aksiyon filmi", category = "Aktivite"),
@@ -91,7 +93,8 @@ class UserPreferencesDataSource @Inject constructor(
             ),
             SavedChoiceList(
                 id = "preset-film",
-                name = "🍿 Film",
+                name = "Film",
+                category = "Film",
                 choices = listOf(
                     Choice(id = "f1", name = "Bilim Kurgu", details = "Yıldızlararası yolculuk ve uzay temalı", category = "Film"),
                     Choice(id = "f2", name = "Komedi", details = "Gülme garantili yerli komedi", category = "Film"),
@@ -102,7 +105,8 @@ class UserPreferencesDataSource @Inject constructor(
             ),
             SavedChoiceList(
                 id = "preset-eglence",
-                name = "🎮 Eğlence",
+                name = "Eğlence",
+                category = "Eğlence",
                 choices = listOf(
                     Choice(id = "e1", name = "PlayStation Kafe", details = "FC 24 ve dövüş oyunları kapışması", category = "Eğlence"),
                     Choice(id = "e2", name = "Karaoke", details = "Detone olmayı göze alanlar kulübü", category = "Eğlence"),
@@ -113,7 +117,7 @@ class UserPreferencesDataSource @Inject constructor(
         )
     }
 
-    suspend fun saveChoiceList(name: String, choices: List<Choice>) {
+    suspend fun saveChoiceList(name: String, category: String, choices: List<Choice>, imageUrl: String? = null) {
         context.dataStore.edit { preferences ->
             val jsonStr = preferences[KEY_SAVED_LISTS]
             val currentLists = if (jsonStr != null) {
@@ -129,7 +133,9 @@ class UserPreferencesDataSource @Inject constructor(
             val newList = SavedChoiceList(
                 id = UUID.randomUUID().toString(),
                 name = name,
-                choices = choices
+                category = category,
+                choices = choices,
+                imageUrl = imageUrl
             )
             currentLists.add(newList)
 
@@ -137,7 +143,7 @@ class UserPreferencesDataSource @Inject constructor(
         }
     }
 
-    suspend fun updateChoiceList(listId: String, name: String, choices: List<Choice>) {
+    suspend fun updateChoiceList(listId: String, name: String, category: String, choices: List<Choice>, imageUrl: String? = null) {
         context.dataStore.edit { preferences ->
             val jsonStr = preferences[KEY_SAVED_LISTS]
             val currentLists = if (jsonStr != null) {
@@ -155,7 +161,9 @@ class UserPreferencesDataSource @Inject constructor(
                 currentLists[index] = SavedChoiceList(
                     id = listId,
                     name = name,
-                    choices = choices
+                    category = category,
+                    choices = choices,
+                    imageUrl = imageUrl
                 )
                 preferences[KEY_SAVED_LISTS] = Json.encodeToString(currentLists.toList())
             }

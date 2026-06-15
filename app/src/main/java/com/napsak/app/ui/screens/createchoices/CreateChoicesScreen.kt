@@ -35,7 +35,16 @@ import com.napsak.app.domain.model.Choice
 import com.napsak.app.ui.theme.AmberSecondary
 import com.napsak.app.ui.theme.CoralPrimary
 import com.napsak.app.ui.theme.CoralPrimaryDark
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import com.google.firebase.storage.FirebaseStorage
+import java.util.UUID
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateChoicesScreen(
     roomId: String,
@@ -46,13 +55,111 @@ fun CreateChoicesScreen(
 
     var showSaveDialog by remember { mutableStateOf(false) }
     var listNameInput by remember { mutableStateOf("") }
+    var listCategoryInput by remember { mutableStateOf("") }
     var showLoadDialog by remember { mutableStateOf(false) }
+    var activeUploadChoiceId by remember { mutableStateOf<String?>(null) }
+    val uploadingChoiceIds = remember { mutableStateListOf<String>() }
+    var isUploadingImage by remember { mutableStateOf(false) }
+    var savedListImageUrl by remember { mutableStateOf("") }
+    var isUploadingSavedListImage by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            isUploadingImage = true
+            val storageRef = FirebaseStorage.getInstance().reference
+            val imageRef = storageRef.child("choices/${UUID.randomUUID()}.jpg")
+            imageRef.putFile(it)
+                .addOnSuccessListener {
+                    imageRef.downloadUrl.addOnSuccessListener { downloadUri ->
+                        viewModel.onImageUrlChange(downloadUri.toString())
+                        isUploadingImage = false
+                    }.addOnFailureListener { e ->
+                        isUploadingImage = false
+                        Toast.makeText(context, "Url alınamadı: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .addOnFailureListener { e ->
+                    isUploadingImage = false
+                    Toast.makeText(context, "Yükleme başarısız: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
+
+    val listChoiceImagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        val choiceId = activeUploadChoiceId
+        if (uri != null && choiceId != null) {
+            uploadingChoiceIds.add(choiceId)
+            val storageRef = FirebaseStorage.getInstance().reference
+            val imageRef = storageRef.child("choices/${UUID.randomUUID()}.jpg")
+            imageRef.putFile(uri)
+                .addOnSuccessListener {
+                    imageRef.downloadUrl.addOnSuccessListener { downloadUri ->
+                        viewModel.updateChoiceImageUrl(choiceId, downloadUri.toString())
+                        uploadingChoiceIds.remove(choiceId)
+                    }.addOnFailureListener {
+                        uploadingChoiceIds.remove(choiceId)
+                    }
+                }
+                .addOnFailureListener {
+                    uploadingChoiceIds.remove(choiceId)
+                }
+        }
+        activeUploadChoiceId = null
+    }
+
+    val savedListImagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            isUploadingSavedListImage = true
+            val storageRef = FirebaseStorage.getInstance().reference
+            val imageRef = storageRef.child("lists/${UUID.randomUUID()}.jpg")
+            imageRef.putFile(it)
+                .addOnSuccessListener {
+                    imageRef.downloadUrl.addOnSuccessListener { downloadUri ->
+                        savedListImageUrl = downloadUri.toString()
+                        isUploadingSavedListImage = false
+                    }.addOnFailureListener { e ->
+                        isUploadingSavedListImage = false
+                        Toast.makeText(context, "Url alınamadı: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .addOnFailureListener { e ->
+                    isUploadingSavedListImage = false
+                    Toast.makeText(context, "Yükleme başarısız: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
+
+    var selectedCategoryFilter by remember { mutableStateOf("Tümü") }
 
     val gradient = Brush.horizontalGradient(
         colors = listOf(CoralPrimary, CoralPrimaryDark)
     )
 
     val scrollState = rememberScrollState()
+
+    val categoryOptions = remember(uiState.savedLists) {
+        val base = listOf("Tümü", "Yemek", "Aktivite", "Film", "Eğlence")
+        val custom = uiState.savedLists.map { it.category }.filter { it.isNotBlank() && it !in base }
+        (base + custom).distinct()
+    }
+
+    val matchingTemplates = remember(selectedCategoryFilter, uiState.savedLists) {
+        val presets = viewModel.getDefaultLists()
+        val allLists = presets + uiState.savedLists
+        if (selectedCategoryFilter == "Tümü") {
+            allLists
+        } else {
+            allLists.filter { it.category.equals(selectedCategoryFilter, ignoreCase = true) }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -101,32 +208,102 @@ fun CreateChoicesScreen(
                 ),
                 modifier = Modifier.padding(bottom = 8.dp)
             )
+
             androidx.compose.foundation.lazy.LazyRow(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val templates = listOf(
-                    "🍔 Yemek" to "Yemek",
-                    "🎬 Aktivite" to "Aktivite",
-                    "🍿 Film" to "Film",
-                    "🎮 Eğlence" to "Eğlence"
-                )
-                items(templates) { (label, value) ->
+                items(categoryOptions) { cat ->
+                    val isSelected = selectedCategoryFilter == cat
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
-                            .background(CoralPrimary.copy(alpha = 0.08f))
-                            .clickable { viewModel.loadPresetTemplate(value) }
+                            .background(
+                                if (isSelected) CoralPrimary else CoralPrimary.copy(alpha = 0.08f)
+                            )
+                            .clickable { selectedCategoryFilter = cat }
                             .padding(horizontal = 14.dp, vertical = 8.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = label,
+                            text = cat,
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = CoralPrimary
+                                color = if (isSelected) Color.White else CoralPrimary
                             )
                         )
+                    }
+                }
+            }
+
+            // Matching Templates Horizontal Scroll
+            if (matchingTemplates.isNotEmpty()) {
+                androidx.compose.foundation.lazy.LazyRow(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(matchingTemplates) { template ->
+                        Card(
+                            modifier = Modifier
+                                .width(140.dp)
+                                .clickable { viewModel.loadChoiceList(template) },
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                        ) {
+                            Column {
+                                // Image/Icon Header
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(60.dp)
+                                        .background(CoralPrimary.copy(alpha = 0.10f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (!template.imageUrl.isNullOrBlank()) {
+                                        AsyncImage(
+                                            model = template.imageUrl,
+                                            contentDescription = null,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                        )
+                                    } else {
+                                        Text(
+                                            text = when (template.category.lowercase()) {
+                                                "yemek" -> "\uD83C\uDF54"
+                                                "aktivite" -> "\uD83C\uDFAC"
+                                                "film" -> "\uD83C\uDF7F"
+                                                "e\u011flence" -> "\uD83C\uDFAE"
+                                                "kahve" -> "\u2615"
+                                                else -> "\uD83D\uDCCB"
+                                            },
+                                            fontSize = 26.sp,
+                                            fontFamily = androidx.compose.ui.text.font.FontFamily.Default
+                                        )
+                                    }
+                                }
+                                Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+                                    Text(
+                                        text = template.name,
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        ),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "${template.choices.size} Se\u00e7enek",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                        )
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -141,7 +318,8 @@ fun CreateChoicesScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp)
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedTextField(
                         value = uiState.currentName,
@@ -158,8 +336,6 @@ fun CreateChoicesScreen(
                         )
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
                     OutlinedTextField(
                         value = uiState.currentDetails,
                         onValueChange = { viewModel.onDetailsChange(it) },
@@ -174,8 +350,6 @@ fun CreateChoicesScreen(
                             cursorColor = CoralPrimary
                         )
                     )
-
-                    Spacer(modifier = Modifier.height(12.dp))
 
                     OutlinedTextField(
                         value = uiState.currentCategory,
@@ -195,9 +369,9 @@ fun CreateChoicesScreen(
                     // Show existing categories in this room as suggestion chips
                     val existingCategories = uiState.choices.map { it.category }.filter { it.isNotBlank() }.distinct()
                     if (existingCategories.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(8.dp))
                         androidx.compose.foundation.lazy.LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             items(existingCategories) { cat ->
                                 Box(
@@ -222,108 +396,192 @@ fun CreateChoicesScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Add / Save Edit Button
-                    Button(
-                        onClick = {
-                            if (uiState.isEditing) {
-                                viewModel.saveEdit()
-                            } else {
-                                viewModel.addChoice()
+                    // Image Picker Section (Compact)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                            .clickable(enabled = !isUploadingImage) {
+                                imagePickerLauncher.launch("image/*")
                             }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        enabled = uiState.currentName.isNotBlank(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (uiState.isEditing) AmberSecondary else CoralPrimary
-                        )
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Icon(
-                            imageVector = if (uiState.isEditing) Icons.Default.Edit else Icons.Default.Add,
-                            contentDescription = null
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (uiState.isEditing) "Düzenlemeyi Kaydet" else "Seçenek Ekle",
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (uiState.currentImageUrl.isNotBlank()) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                            ) {
+                                AsyncImage(
+                                    model = uiState.currentImageUrl,
+                                    contentDescription = "Se\u00e7enek Resmi",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                            }
+                            Text(
+                                text = "Foto\u011fraf Y\u00fcklendi",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = CoralPrimary
+                                ),
+                                modifier = Modifier.weight(1f)
+                            )
+                            // Delete button
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFE57373).copy(alpha = 0.12f))
+                                    .clickable { viewModel.onImageUrlChange("") },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Resmi Kald\u0131r",
+                                    tint = Color(0xFFE57373),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                        } else if (isUploadingImage) {
+                            CircularProgressIndicator(
+                                color = CoralPrimary,
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Text(
+                                text = "Y\u00fckleniyor...",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = CoralPrimary
+                                )
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Resim Ekle",
+                                tint = CoralPrimary.copy(alpha = 0.7f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "Foto\u011fraf Ekle (\u0130ste\u011fe ba\u011fl\u0131)",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                            )
+                        }
                     }
 
-                    // Cancel Edit Button
-                    if (uiState.isEditing) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        TextButton(
-                            onClick = { viewModel.cancelEdit() },
-                            modifier = Modifier.fillMaxWidth()
+                    // Add / Save Edit Button
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (uiState.isEditing) {
+                            OutlinedButton(
+                                onClick = { viewModel.cancelEdit() },
+                                modifier = Modifier.weight(1f).height(48.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Gray)
+                            ) {
+                                Text("İptal", fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        Button(
+                            onClick = {
+                                if (uiState.isEditing) {
+                                    viewModel.saveEdit()
+                                } else {
+                                    viewModel.addChoice()
+                                }
+                            },
+                            modifier = Modifier.weight(2f).height(48.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            enabled = uiState.currentName.isNotBlank() && !isUploadingImage,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (uiState.isEditing) AmberSecondary else CoralPrimary
+                            )
                         ) {
-                            Text("İptal", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            Icon(
+                                imageVector = if (uiState.isEditing) Icons.Default.Edit else Icons.Default.Add,
+                                contentDescription = null
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (uiState.isEditing) "Kaydet" else "Seçenek Ekle",
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Choice List Header
-            Row(
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                )
             ) {
-                Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = "Eklenen Seçenekler",
+                        text = "Seçilenler",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold
                         )
                     )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 2.dp)
-                    ) {
-                        Text(
-                            text = "${uiState.choices.size} adet",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = CoralPrimary,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // Clear All Button
                         if (uiState.choices.isNotEmpty()) {
-                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "•  Temizle",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = Color(0xFFE57373),
-                                    fontWeight = FontWeight.Bold
+                                text = "Temizle",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFE57373)
                                 ),
                                 modifier = Modifier.clickable { viewModel.clearAllChoices() }
                             )
                         }
                     }
                 }
+            }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Listeyi Kaydet Butonu
-                    TextButton(
-                        onClick = { showSaveDialog = true },
-                        enabled = uiState.choices.isNotEmpty(),
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = CoralPrimary,
-                            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                        )
-                    ) {
-                        Text("Listeyi Kaydet", fontWeight = FontWeight.Bold)
-                    }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Listeyi Kaydet Butonu
+                TextButton(
+                    onClick = { showSaveDialog = true },
+                    enabled = uiState.choices.isNotEmpty(),
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = CoralPrimary,
+                        disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    )
+                ) {
+                    Text("Listeyi Kaydet", fontWeight = FontWeight.Bold)
+                }
 
-                    // Listelerim Butonu
-                    TextButton(
-                        onClick = { showLoadDialog = true },
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
-                    ) {
-                        Text("Listelerim", fontWeight = FontWeight.Bold)
-                    }
+                // Listelerim Butonu
+                TextButton(
+                    onClick = { showLoadDialog = true },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
+                ) {
+                    Text("Listelerim", fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -346,15 +604,15 @@ fun CreateChoicesScreen(
                         Text(
                             text = "Henüz seçenek eklenmedi",
                             style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                                  fontWeight = FontWeight.SemiBold,
+                                  color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
                             )
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "Yukarıdan şablon yükle veya kendin ekle",
                             style = MaterialTheme.typography.bodySmall.copy(
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
+                                  color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
                             )
                         )
                     }
@@ -379,8 +637,13 @@ fun CreateChoicesScreen(
                             ChoiceListItem(
                                 index = idx + 1,
                                 choice = choice,
+                                isUploadingImage = uploadingChoiceIds.contains(choice.id),
                                 onEdit = { viewModel.startEditing(choice) },
-                                onRemove = { viewModel.removeChoice(choice.id) }
+                                onRemove = { viewModel.removeChoice(choice.id) },
+                                onAddPhotoClick = {
+                                    activeUploadChoiceId = choice.id
+                                    listChoiceImagePickerLauncher.launch("image/*")
+                                }
                             )
                         }
                     }
@@ -448,161 +711,245 @@ fun CreateChoicesScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
+    }
 
-        // Listeyi Kaydet Dialog
-        if (showSaveDialog) {
-            AlertDialog(
-                onDismissRequest = {
-                    showSaveDialog = false
-                    listNameInput = ""
-                },
-                title = { Text("Listeyi Kaydet") },
-                text = {
+    // Save List Dialog
+    if (showSaveDialog) {
+        AlertDialog(
+            onDismissRequest = { 
+                showSaveDialog = false
+                listNameInput = ""
+                listCategoryInput = ""
+                savedListImageUrl = ""
+            },
+            title = { Text("Listeyi Şablon Olarak Kaydet") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = listNameInput,
                         onValueChange = { listNameInput = it },
                         label = { Text("Liste Adı") },
-                        placeholder = { Text("ör: Yemek Listesi, Oyunlar...") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = CoralPrimary,
-                            focusedLabelColor = CoralPrimary,
-                            cursorColor = CoralPrimary
-                        )
+                        shape = RoundedCornerShape(12.dp)
                     )
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            if (listNameInput.isNotBlank()) {
-                                viewModel.saveChoiceList(listNameInput)
-                                showSaveDialog = false
-                                listNameInput = ""
-                            }
-                        },
-                        enabled = listNameInput.isNotBlank(),
-                        colors = ButtonDefaults.buttonColors(containerColor = CoralPrimary)
+                    OutlinedTextField(
+                        value = listCategoryInput,
+                        onValueChange = { listCategoryInput = it },
+                        label = { Text("Kategori") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text("Kaydet")
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = {
-                            showSaveDialog = false
-                            listNameInput = ""
-                        }
-                    ) {
-                        Text("İptal")
-                    }
-                },
-                shape = RoundedCornerShape(20.dp)
-            )
-        }
-
-        // Listelerim Dialog
-        if (showLoadDialog) {
-            AlertDialog(
-                onDismissRequest = { showLoadDialog = false },
-                title = { Text("Kayıtlı Listelerim") },
-                text = {
-                    if (uiState.savedLists.isEmpty()) {
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 24.dp),
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .clickable(enabled = !isUploadingSavedListImage) {
+                                    savedListImagePickerLauncher.launch("image/*")
+                                },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "Henüz kayıtlı bir listeniz yok.",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            if (isUploadingSavedListImage) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = CoralPrimary,
+                                    strokeWidth = 2.dp
                                 )
-                            )
+                            } else if (savedListImageUrl.isNotBlank()) {
+                                AsyncImage(
+                                    model = savedListImageUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Resim Ekle",
+                                    tint = CoralPrimary.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 260.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(uiState.savedLists) { savedList ->
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                    )
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Column(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .clickable {
-                                                    viewModel.loadChoiceList(savedList)
-                                                    showLoadDialog = false
-                                                }
-                                        ) {
-                                            Text(
-                                                text = savedList.name,
-                                                style = MaterialTheme.typography.bodyLarge.copy(
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            )
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            Text(
-                                                text = "${savedList.choices.size} seçenek içeriyor",
-                                                style = MaterialTheme.typography.bodySmall.copy(
-                                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                                )
-                                            )
-                                        }
+                        Column {
+                            Text("Liste Kapak Resmi", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("Galeriden resim seç (isteğe bağlı)", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (listNameInput.isNotBlank()) {
+                            viewModel.saveChoiceList(listNameInput, listCategoryInput, savedListImageUrl.takeIf { it.isNotBlank() })
+                            showSaveDialog = false
+                            listNameInput = ""
+                            listCategoryInput = ""
+                            savedListImageUrl = ""
+                        }
+                    },
+                    enabled = listNameInput.isNotBlank() && !isUploadingSavedListImage
+                ) {
+                    Text("Kaydet")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showSaveDialog = false
+                        listNameInput = ""
+                        listCategoryInput = ""
+                        savedListImageUrl = ""
+                    }
+                ) {
+                    Text("İptal")
+                }
+            },
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
 
-                                        IconButton(
-                                            onClick = { viewModel.deleteChoiceList(savedList.id) }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Delete,
-                                                contentDescription = "Sil",
-                                                tint = Color(0xFFE57373)
+    // Listelerim Dialog
+    if (showLoadDialog) {
+        AlertDialog(
+            onDismissRequest = { showLoadDialog = false },
+            title = { Text("Kayıtlı Listelerim") },
+            text = {
+                if (uiState.savedLists.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Henüz kayıtlı bir listeniz yok.",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 260.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(uiState.savedLists) { savedList ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            viewModel.loadChoiceList(savedList)
+                                            showLoadDialog = false
+                                        }
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    // List Cover thumbnail
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(CoralPrimary.copy(alpha = 0.08f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (!savedList.imageUrl.isNullOrBlank()) {
+                                            AsyncImage(
+                                                model = savedList.imageUrl,
+                                                contentDescription = null,
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                            )
+                                        } else {
+                                            Text(
+                                                text = when (savedList.category.lowercase()) {
+                                                    "yemek" -> "\uD83C\uDF54"
+                                                    "aktivite" -> "\uD83C\uDFAC"
+                                                    "film" -> "\uD83C\uDF7F"
+                                                    "eğlence" -> "\uD83C\uDFAE"
+                                                    "kahve" -> "\u2615"
+                                                    else -> "\uD83D\uDCCB"
+                                                },
+                                                fontSize = 18.sp,
+                                                fontFamily = androidx.compose.ui.text.font.FontFamily.Default
                                             )
                                         }
+                                    }
+
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            text = savedList.name,
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = "${savedList.choices.size} seçenek içeriyor",
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                        )
+                                    }
+
+                                    IconButton(
+                                        onClick = { viewModel.deleteChoiceList(savedList.id) }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Sil",
+                                            tint = Color(0xFFE57373)
+                                        )
                                     }
                                 }
                             }
                         }
                     }
-                },
-                confirmButton = {
-                    TextButton(onClick = { showLoadDialog = false }) {
-                        Text("Kapat")
-                    }
-                },
-                shape = RoundedCornerShape(20.dp)
-            )
-        }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLoadDialog = false }) {
+                    Text("Kapat")
+                }
+            },
+            shape = RoundedCornerShape(20.dp)
+        )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChoiceListItem(
     index: Int,
     choice: Choice,
+    isUploadingImage: Boolean,
     onEdit: () -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    onAddPhotoClick: () -> Unit
 ) {
+    val hasImage = !choice.imageUrl.isNullOrBlank()
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
@@ -613,27 +960,57 @@ private fun ChoiceListItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Index badge
+            // Photo thumbnail or camera placeholder
             Box(
                 modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(CoralPrimary.copy(alpha = 0.15f)),
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(
+                        if (hasImage) MaterialTheme.colorScheme.surfaceVariant
+                        else CoralPrimary.copy(alpha = 0.08f)
+                    )
+                    .clickable(enabled = !isUploadingImage) { onAddPhotoClick() },
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "$index",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = CoralPrimary
+                if (isUploadingImage) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = CoralPrimary,
+                        strokeWidth = 2.dp
                     )
-                )
+                } else if (hasImage) {
+                    AsyncImage(
+                        model = choice.imageUrl,
+                        contentDescription = choice.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Fotoğraf Ekle",
+                            tint = CoralPrimary.copy(alpha = 0.5f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "Foto",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 8.sp,
+                                color = CoralPrimary.copy(alpha = 0.5f),
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                }
             }
-
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
             // Choice info
             Column(modifier = Modifier.weight(1f)) {
@@ -658,30 +1035,44 @@ private fun ChoiceListItem(
                 }
             }
 
-            // Edit button
-            IconButton(
-                onClick = onEdit,
-                modifier = Modifier.size(36.dp)
+            // Action buttons with spacing
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Düzenle",
-                    tint = AmberSecondary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
+                // Edit button
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(AmberSecondary.copy(alpha = 0.10f))
+                        .clickable { onEdit() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "D\u00fczenle",
+                        tint = AmberSecondary,
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
 
-            // Remove button
-            IconButton(
-                onClick = onRemove,
-                modifier = Modifier.size(36.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Kaldır",
-                    tint = Color(0xFFE57373),
-                    modifier = Modifier.size(18.dp)
-                )
+                // Remove button
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFE57373).copy(alpha = 0.10f))
+                        .clickable { onRemove() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Kald\u0131r",
+                        tint = Color(0xFFE57373),
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
             }
         }
     }
