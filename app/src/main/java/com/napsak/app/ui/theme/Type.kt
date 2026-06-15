@@ -2,37 +2,28 @@ package com.napsak.app.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.googlefonts.Font
-import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
 import com.napsak.app.R
 
-val provider = GoogleFont.Provider(
-    providerAuthority = "com.google.android.gms.fonts",
-    providerPackage = "com.google.android.gms",
-    certificates = R.array.com_google_android_gms_fonts_certs
-)
-
-val SpaceGroteskFont = GoogleFont("Space Grotesk")
-val PlusJakartaSansFont = GoogleFont("Plus Jakarta Sans")
-
 val SpaceGroteskFontFamily = FontFamily(
-    Font(googleFont = SpaceGroteskFont, fontProvider = provider, weight = FontWeight.Light),
-    Font(googleFont = SpaceGroteskFont, fontProvider = provider, weight = FontWeight.Normal),
-    Font(googleFont = SpaceGroteskFont, fontProvider = provider, weight = FontWeight.Medium),
-    Font(googleFont = SpaceGroteskFont, fontProvider = provider, weight = FontWeight.SemiBold),
-    Font(googleFont = SpaceGroteskFont, fontProvider = provider, weight = FontWeight.Bold)
+    Font(R.font.space_grotesk_light, FontWeight.Light),
+    Font(R.font.space_grotesk_regular, FontWeight.Normal),
+    Font(R.font.space_grotesk_medium, FontWeight.Medium),
+    Font(R.font.space_grotesk_bold, FontWeight.SemiBold),
+    Font(R.font.space_grotesk_bold, FontWeight.Bold)
 )
 
 val PlusJakartaSansFontFamily = FontFamily(
-    Font(googleFont = PlusJakartaSansFont, fontProvider = provider, weight = FontWeight.Light),
-    Font(googleFont = PlusJakartaSansFont, fontProvider = provider, weight = FontWeight.Normal),
-    Font(googleFont = PlusJakartaSansFont, fontProvider = provider, weight = FontWeight.Medium),
-    Font(googleFont = PlusJakartaSansFont, fontProvider = provider, weight = FontWeight.SemiBold),
-    Font(googleFont = PlusJakartaSansFont, fontProvider = provider, weight = FontWeight.Bold)
+    Font(R.font.plus_jakarta_sans_light, FontWeight.Light),
+    Font(R.font.plus_jakarta_sans_regular, FontWeight.Normal),
+    Font(R.font.plus_jakarta_sans_medium, FontWeight.Medium),
+    Font(R.font.plus_jakarta_sans_semibold, FontWeight.SemiBold),
+    Font(R.font.plus_jakarta_sans_bold, FontWeight.Bold)
 )
+
 
 val Typography = Typography(
     displayLarge = TextStyle(
