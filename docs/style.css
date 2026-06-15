@@ -1,23 +1,23 @@
 /* Global Styles and Design System */
 :root {
-    --primary: #FF6B6B;
-    --primary-dark: #EE5253;
-    --primary-glow: rgba(255, 107, 107, 0.4);
-    --secondary: #FF9F43;
+    --primary: #818CF8;
+    --primary-dark: #6366F1;
+    --primary-glow: rgba(129, 140, 248, 0.4);
+    --secondary: #FBBF24;
     --success: #10AC84;
     --success-glow: rgba(16, 172, 132, 0.3);
-    --danger: #FF6B6B;
-    --danger-glow: rgba(255, 107, 107, 0.3);
+    --danger: #EF4444;
+    --danger-glow: rgba(239, 68, 68, 0.3);
     
-    --bg-dark: #0A0E17;
-    --surface: rgba(30, 39, 56, 0.6);
-    --surface-border: rgba(255, 255, 255, 0.08);
+    --bg-dark: #0B0F19;
+    --surface: rgba(21, 29, 48, 0.6);
+    --surface-border: rgba(255, 255, 255, 0.06);
     --text-primary: #FFFFFF;
     --text-secondary: rgba(255, 255, 255, 0.7);
     --text-muted: rgba(255, 255, 255, 0.4);
     
     --gradient: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-    --gradient-glow: linear-gradient(135deg, rgba(255, 107, 107, 0.15) 0%, rgba(238, 82, 83, 0.15) 100%);
+    --gradient-glow: linear-gradient(135deg, rgba(129, 140, 248, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%);
 }
 
 * {

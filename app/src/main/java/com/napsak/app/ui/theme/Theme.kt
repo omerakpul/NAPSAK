@@ -34,8 +34,8 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun NAPSAKTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // Set dynamicColor to false to preserve our custom premium theme branding
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
