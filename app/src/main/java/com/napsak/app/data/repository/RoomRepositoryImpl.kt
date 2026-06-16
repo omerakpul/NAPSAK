@@ -3,6 +3,7 @@ package com.napsak.app.data.repository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import com.napsak.app.data.datasource.UserPreferencesDataSource
+import com.napsak.app.data.model.RoomDto
 import com.napsak.app.domain.model.Choice
 import com.napsak.app.domain.model.Participant
 import com.napsak.app.domain.model.Room
@@ -48,40 +49,8 @@ class RoomRepositoryImpl @Inject constructor(
     }
 
     private fun DataSnapshot.toRoom(): Room? {
-        val id = child("id").getValue(String::class.java) ?: return null
-        val hostId = child("hostId").getValue(String::class.java) ?: ""
-        val stateStr = child("state").getValue(String::class.java) ?: "WAITING"
-        val state = try { RoomState.valueOf(stateStr) } catch (e: Exception) { RoomState.WAITING }
-        val winnerChoiceId = child("winnerChoiceId").getValue(String::class.java)
-        val createdAt = child("createdAt").getValue(Long::class.java) ?: 0L
-        
-        val participants = mutableMapOf<String, Participant>()
-        child("participants").children.forEach { pSnap ->
-            val pId = pSnap.child("id").getValue(String::class.java) ?: ""
-            val pName = pSnap.child("name").getValue(String::class.java) ?: ""
-            val pIsReady = pSnap.child("ready").getValue(Boolean::class.java) ?: pSnap.child("isReady").getValue(Boolean::class.java) ?: false
-            val pHasVoted = pSnap.child("hasVoted").getValue(Boolean::class.java) ?: false
-            if (pId.isNotEmpty()) {
-                participants[pId] = Participant(pId, pName, pIsReady, pHasVoted)
-            }
-        }
-        
-        val choices = mutableMapOf<String, Choice>()
-        child("choices").children.forEach { cSnap ->
-            val cId = cSnap.child("id").getValue(String::class.java) ?: ""
-            val cName = cSnap.child("name").getValue(String::class.java) ?: ""
-            val cDetails = cSnap.child("details").getValue(String::class.java) ?: ""
-            val cImageUrl = cSnap.child("imageUrl").getValue(String::class.java)
-            val cVoteCount = cSnap.child("voteCount").getValue(Int::class.java) ?: 0
-            val cLatitude = cSnap.child("latitude").getValue(Double::class.java)
-            val cLongitude = cSnap.child("longitude").getValue(Double::class.java)
-            val cCategory = cSnap.child("category").getValue(String::class.java) ?: ""
-            if (cId.isNotEmpty()) {
-                choices[cId] = Choice(cId, cName, cDetails, cImageUrl, cVoteCount, cLatitude, cLongitude, cCategory)
-            }
-        }
-        
-        return Room(id, hostId, state, winnerChoiceId, createdAt, participants, choices)
+        val dto = getValue(RoomDto::class.java) ?: return null
+        return dto.toDomain()
     }
 
     override fun createRoom(hostName: String): Flow<Result<Room>> = callbackFlow {
