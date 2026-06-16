@@ -72,13 +72,18 @@ fun EditListScreen(
         uri?.let {
             isUploadingListImage = true
             coroutineScope.launch {
-                val url = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, it)
-                isUploadingListImage = false
-                if (url != null) {
-                    listImageUrl = url
-                } else {
-                    Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                when (val result = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, it)) {
+                    is com.napsak.app.data.util.ImgbbUploader.UploadResult.Success -> {
+                        listImageUrl = result.url
+                    }
+                    com.napsak.app.data.util.ImgbbUploader.UploadResult.FileTooLarge -> {
+                        Toast.makeText(context, "Seçilen dosya çok büyük (Maksimum 10 MB)", Toast.LENGTH_LONG).show()
+                    }
+                    com.napsak.app.data.util.ImgbbUploader.UploadResult.Failure -> {
+                        Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                    }
                 }
+                isUploadingListImage = false
             }
         }
     }
@@ -89,13 +94,18 @@ fun EditListScreen(
         uri?.let {
             isUploadingImage = true
             coroutineScope.launch {
-                val url = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, it)
-                isUploadingImage = false
-                if (url != null) {
-                    newChoiceImageUrl = url
-                } else {
-                    Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                when (val result = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, it)) {
+                    is com.napsak.app.data.util.ImgbbUploader.UploadResult.Success -> {
+                        newChoiceImageUrl = result.url
+                    }
+                    com.napsak.app.data.util.ImgbbUploader.UploadResult.FileTooLarge -> {
+                        Toast.makeText(context, "Seçilen dosya çok büyük (Maksimum 10 MB)", Toast.LENGTH_LONG).show()
+                    }
+                    com.napsak.app.data.util.ImgbbUploader.UploadResult.Failure -> {
+                        Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                    }
                 }
+                isUploadingImage = false
             }
         }
     }
@@ -107,14 +117,19 @@ fun EditListScreen(
         if (uri != null && choiceId != null) {
             uploadingChoiceIds.add(choiceId)
             coroutineScope.launch {
-                val url = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, uri)
-                if (url != null) {
-                    val index = editingChoices.indexOfFirst { it.id == choiceId }
-                    if (index != -1) {
-                        editingChoices[index] = editingChoices[index].copy(imageUrl = url)
+                when (val result = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, uri)) {
+                    is com.napsak.app.data.util.ImgbbUploader.UploadResult.Success -> {
+                        val index = editingChoices.indexOfFirst { it.id == choiceId }
+                        if (index != -1) {
+                            editingChoices[index] = editingChoices[index].copy(imageUrl = result.url)
+                        }
                     }
-                } else {
-                    Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                    com.napsak.app.data.util.ImgbbUploader.UploadResult.FileTooLarge -> {
+                        Toast.makeText(context, "Seçilen dosya çok büyük (Maksimum 10 MB)", Toast.LENGTH_LONG).show()
+                    }
+                    com.napsak.app.data.util.ImgbbUploader.UploadResult.Failure -> {
+                        Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                    }
                 }
                 uploadingChoiceIds.remove(choiceId)
             }

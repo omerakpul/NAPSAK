@@ -75,13 +75,18 @@ fun CreateChoicesScreen(
         uri?.let {
             isUploadingImage = true
             coroutineScope.launch {
-                val url = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, it)
-                isUploadingImage = false
-                if (url != null) {
-                    viewModel.onImageUrlChange(url)
-                } else {
-                    Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                when (val result = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, it)) {
+                    is com.napsak.app.data.util.ImgbbUploader.UploadResult.Success -> {
+                        viewModel.onImageUrlChange(result.url)
+                    }
+                    com.napsak.app.data.util.ImgbbUploader.UploadResult.FileTooLarge -> {
+                        Toast.makeText(context, "Seçilen dosya çok büyük (Maksimum 10 MB)", Toast.LENGTH_LONG).show()
+                    }
+                    com.napsak.app.data.util.ImgbbUploader.UploadResult.Failure -> {
+                        Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                    }
                 }
+                isUploadingImage = false
             }
         }
     }
@@ -93,11 +98,16 @@ fun CreateChoicesScreen(
         if (uri != null && choiceId != null) {
             uploadingChoiceIds.add(choiceId)
             coroutineScope.launch {
-                val url = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, uri)
-                if (url != null) {
-                    viewModel.updateChoiceImageUrl(choiceId, url)
-                } else {
-                    Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                when (val result = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, uri)) {
+                    is com.napsak.app.data.util.ImgbbUploader.UploadResult.Success -> {
+                        viewModel.updateChoiceImageUrl(choiceId, result.url)
+                    }
+                    com.napsak.app.data.util.ImgbbUploader.UploadResult.FileTooLarge -> {
+                        Toast.makeText(context, "Seçilen dosya çok büyük (Maksimum 10 MB)", Toast.LENGTH_LONG).show()
+                    }
+                    com.napsak.app.data.util.ImgbbUploader.UploadResult.Failure -> {
+                        Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                    }
                 }
                 uploadingChoiceIds.remove(choiceId)
             }
@@ -111,13 +121,18 @@ fun CreateChoicesScreen(
         uri?.let {
             isUploadingSavedListImage = true
             coroutineScope.launch {
-                val url = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, it)
-                isUploadingSavedListImage = false
-                if (url != null) {
-                    savedListImageUrl = url
-                } else {
-                    Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                when (val result = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, it)) {
+                    is com.napsak.app.data.util.ImgbbUploader.UploadResult.Success -> {
+                        savedListImageUrl = result.url
+                    }
+                    com.napsak.app.data.util.ImgbbUploader.UploadResult.FileTooLarge -> {
+                        Toast.makeText(context, "Seçilen dosya çok büyük (Maksimum 10 MB)", Toast.LENGTH_LONG).show()
+                    }
+                    com.napsak.app.data.util.ImgbbUploader.UploadResult.Failure -> {
+                        Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                    }
                 }
+                isUploadingSavedListImage = false
             }
         }
     }
