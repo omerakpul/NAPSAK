@@ -21,8 +21,20 @@ class HomeViewModel @Inject constructor(
     private val createRoomUseCase: CreateRoomUseCase,
     private val joinRoomUseCase: JoinRoomUseCase,
     private val roomRepository: RoomRepository,
-    private val userPreferencesDataSource: UserPreferencesDataSource
+    private val userPreferencesDataSource: UserPreferencesDataSource,
+    private val uploadImageUseCase: com.napsak.app.domain.usecase.UploadImageUseCase
 ) : ViewModel() {
+
+    fun uploadImage(
+        context: android.content.Context,
+        uri: android.net.Uri,
+        onResult: (com.napsak.app.domain.model.UploadResult) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = uploadImageUseCase(context, uri)
+            onResult(result)
+        }
+    }
 
     private val _savedUsername = MutableStateFlow("")
     val savedUsername: StateFlow<String> = _savedUsername.asStateFlow()

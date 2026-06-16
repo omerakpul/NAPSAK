@@ -74,15 +74,15 @@ fun CreateChoicesScreen(
     ) { uri: Uri? ->
         uri?.let {
             isUploadingImage = true
-            coroutineScope.launch {
-                when (val result = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, it)) {
-                    is com.napsak.app.data.util.ImgbbUploader.UploadResult.Success -> {
+            viewModel.uploadImage(context, it) { result ->
+                when (result) {
+                    is com.napsak.app.domain.model.UploadResult.Success -> {
                         viewModel.onImageUrlChange(result.url)
                     }
-                    com.napsak.app.data.util.ImgbbUploader.UploadResult.FileTooLarge -> {
+                    com.napsak.app.domain.model.UploadResult.FileTooLarge -> {
                         Toast.makeText(context, "Seçilen dosya çok büyük (Maksimum 10 MB)", Toast.LENGTH_LONG).show()
                     }
-                    com.napsak.app.data.util.ImgbbUploader.UploadResult.Failure -> {
+                    com.napsak.app.domain.model.UploadResult.Failure -> {
                         Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -97,15 +97,15 @@ fun CreateChoicesScreen(
         val choiceId = activeUploadChoiceId
         if (uri != null && choiceId != null) {
             uploadingChoiceIds.add(choiceId)
-            coroutineScope.launch {
-                when (val result = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, uri)) {
-                    is com.napsak.app.data.util.ImgbbUploader.UploadResult.Success -> {
+            viewModel.uploadImage(context, uri) { result ->
+                when (result) {
+                    is com.napsak.app.domain.model.UploadResult.Success -> {
                         viewModel.updateChoiceImageUrl(choiceId, result.url)
                     }
-                    com.napsak.app.data.util.ImgbbUploader.UploadResult.FileTooLarge -> {
+                    com.napsak.app.domain.model.UploadResult.FileTooLarge -> {
                         Toast.makeText(context, "Seçilen dosya çok büyük (Maksimum 10 MB)", Toast.LENGTH_LONG).show()
                     }
-                    com.napsak.app.data.util.ImgbbUploader.UploadResult.Failure -> {
+                    com.napsak.app.domain.model.UploadResult.Failure -> {
                         Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -120,15 +120,15 @@ fun CreateChoicesScreen(
     ) { uri: Uri? ->
         uri?.let {
             isUploadingSavedListImage = true
-            coroutineScope.launch {
-                when (val result = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, it)) {
-                    is com.napsak.app.data.util.ImgbbUploader.UploadResult.Success -> {
+            viewModel.uploadImage(context, it) { result ->
+                when (result) {
+                    is com.napsak.app.domain.model.UploadResult.Success -> {
                         savedListImageUrl = result.url
                     }
-                    com.napsak.app.data.util.ImgbbUploader.UploadResult.FileTooLarge -> {
+                    com.napsak.app.domain.model.UploadResult.FileTooLarge -> {
                         Toast.makeText(context, "Seçilen dosya çok büyük (Maksimum 10 MB)", Toast.LENGTH_LONG).show()
                     }
-                    com.napsak.app.data.util.ImgbbUploader.UploadResult.Failure -> {
+                    com.napsak.app.domain.model.UploadResult.Failure -> {
                         Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
                     }
                 }

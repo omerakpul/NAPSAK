@@ -1,10 +1,13 @@
-package com.napsak.app.data.util
+package com.napsak.app.data.repository
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.OpenableColumns
+import com.napsak.app.BuildConfig
+import com.napsak.app.domain.model.UploadResult
+import com.napsak.app.domain.repository.ImageRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -17,20 +20,53 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import java.io.FileOutputStream
+import javax.inject.Inject
+import javax.inject.Singleton
 
-import com.napsak.app.BuildConfig
+@Singleton
+class ImageRepositoryImpl @Inject constructor(
+    private val client: OkHttpClient
+) : ImageRepository {
 
-object ImgbbUploader {
-    private val API_KEY = BuildConfig.IMGBB_API_KEY
-    private val client = OkHttpClient()
+    private val apiKey = BuildConfig.IMGBB_API_KEY
     private val json = Json { ignoreUnknownKeys = true }
-    
-    private const val MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
+    private val maxFileSizeBytes = 10 * 1024 * 1024 // 10 MB
 
-    sealed class UploadResult {
-        data class Success(val url: String) : UploadResult()
-        object FileTooLarge : UploadResult()
-        object Failure : UploadResult()
+    override suspend fun uploadImage(context: Context, uri: Uri): UploadResult = withContext(Dispatchers.IO) {
+        try {
+            val fileSize = getUriFileSize(context, uri)
+            if (fileSize > maxFileSizeBytes) {
+                return@withContext UploadResult.FileTooLarge
+            }
+
+            val file = compressUriToFile(context, uri) ?: return@withContext UploadResult.Failure
+            val requestBody = MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart(
+                    "image",
+                    file.name,
+                    file.asRequestBody("image/*".toMediaType())
+                )
+                .build()
+
+            val request = Request.Builder()
+                .url("https://api.imgbb.com/1/upload?key=$apiKey")
+                .post(requestBody)
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@withContext UploadResult.Failure
+                val bodyString = response.body?.string() ?: return@withContext UploadResult.Failure
+                val jsonObject = json.parseToJsonElement(bodyString).jsonObject
+                val data = jsonObject["data"]?.jsonObject ?: return@withContext UploadResult.Failure
+                val displayUrl = data["url"]?.jsonPrimitive?.content ?: return@withContext UploadResult.Failure
+                file.delete() // clean up temp file
+                return@withContext UploadResult.Success(displayUrl)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            UploadResult.Failure
+        }
     }
 
     private fun getUriFileSize(context: Context, uri: Uri): Long {
@@ -61,48 +97,10 @@ object ImgbbUploader {
         return size
     }
 
-    suspend fun uploadImage(context: Context, uri: Uri): UploadResult = withContext(Dispatchers.IO) {
-        try {
-            val fileSize = getUriFileSize(context, uri)
-            if (fileSize > MAX_FILE_SIZE_BYTES) {
-                return@withContext UploadResult.FileTooLarge
-            }
-
-            val file = compressUriToFile(context, uri) ?: return@withContext UploadResult.Failure
-            val requestBody = MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart(
-                    "image",
-                    file.name,
-                    file.asRequestBody("image/*".toMediaType())
-                )
-                .build()
-
-            val request = Request.Builder()
-                .url("https://api.imgbb.com/1/upload?key=$API_KEY")
-                .post(requestBody)
-                .build()
-
-            client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return@withContext UploadResult.Failure
-                val bodyString = response.body?.string() ?: return@withContext UploadResult.Failure
-                val jsonObject = json.parseToJsonElement(bodyString).jsonObject
-                val data = jsonObject["data"]?.jsonObject ?: return@withContext UploadResult.Failure
-                val displayUrl = data["url"]?.jsonPrimitive?.content ?: return@withContext UploadResult.Failure
-                file.delete() // clean up temp file
-                return@withContext UploadResult.Success(displayUrl)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            UploadResult.Failure
-        }
-    }
-
     private fun compressUriToFile(context: Context, uri: Uri): File? {
         return try {
             val resolver = context.contentResolver
             
-            // 1. Get dimensions first without loading full bitmap to RAM (prevent OOM)
             val options = BitmapFactory.Options().apply {
                 inJustDecodeBounds = true
             }
@@ -114,7 +112,6 @@ object ImgbbUploader {
             val height = options.outHeight
             if (width <= 0 || height <= 0) return null
 
-            // Downscale if dimension is larger than 1024px
             val reqWidth = 1024
             val reqHeight = 1024
             var inSampleSize = 1
@@ -126,7 +123,6 @@ object ImgbbUploader {
                 }
             }
 
-            // 2. Decode bitmap with inSampleSize
             val decodeOptions = BitmapFactory.Options().apply {
                 inSampleSize = inSampleSize
             }
@@ -134,12 +130,11 @@ object ImgbbUploader {
                 BitmapFactory.decodeStream(stream, null, decodeOptions)
             } ?: return null
 
-            // 3. Compress and write to temp file
             val tempFile = File.createTempFile("upload_compressed_", ".jpg", context.cacheDir)
             FileOutputStream(tempFile).use { outputStream ->
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 75, outputStream)
             }
-            bitmap.recycle() // release native memory
+            bitmap.recycle()
             
             tempFile
         } catch (e: Exception) {

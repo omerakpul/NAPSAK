@@ -31,8 +31,20 @@ data class CreateChoicesUiState(
 @HiltViewModel
 class CreateChoicesViewModel @Inject constructor(
     private val userPreferencesDataSource: UserPreferencesDataSource,
-    private val startVotingUseCase: StartVotingUseCase
+    private val startVotingUseCase: StartVotingUseCase,
+    private val uploadImageUseCase: com.napsak.app.domain.usecase.UploadImageUseCase
 ) : ViewModel() {
+
+    fun uploadImage(
+        context: android.content.Context,
+        uri: android.net.Uri,
+        onResult: (com.napsak.app.domain.model.UploadResult) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = uploadImageUseCase(context, uri)
+            onResult(result)
+        }
+    }
 
     private val _uiState = MutableStateFlow(CreateChoicesUiState())
     val uiState: StateFlow<CreateChoicesUiState> = _uiState.asStateFlow()
