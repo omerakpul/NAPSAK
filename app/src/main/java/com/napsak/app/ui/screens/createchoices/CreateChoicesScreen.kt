@@ -41,7 +41,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
-import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,28 +64,22 @@ fun CreateChoicesScreen(
     var isUploadingSavedListImage by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
             isUploadingImage = true
-            val storageRef = FirebaseStorage.getInstance().reference
-            val imageRef = storageRef.child("choices/${UUID.randomUUID()}.jpg")
-            imageRef.putFile(it)
-                .addOnSuccessListener {
-                    imageRef.downloadUrl.addOnSuccessListener { downloadUri ->
-                        viewModel.onImageUrlChange(downloadUri.toString())
-                        isUploadingImage = false
-                    }.addOnFailureListener { e ->
-                        isUploadingImage = false
-                        Toast.makeText(context, "Url alınamadı: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
+            coroutineScope.launch {
+                val url = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, it)
+                isUploadingImage = false
+                if (url != null) {
+                    viewModel.onImageUrlChange(url)
+                } else {
+                    Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
                 }
-                .addOnFailureListener { e ->
-                    isUploadingImage = false
-                    Toast.makeText(context, "Yükleme başarısız: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
+            }
         }
     }
 
@@ -95,20 +89,15 @@ fun CreateChoicesScreen(
         val choiceId = activeUploadChoiceId
         if (uri != null && choiceId != null) {
             uploadingChoiceIds.add(choiceId)
-            val storageRef = FirebaseStorage.getInstance().reference
-            val imageRef = storageRef.child("choices/${UUID.randomUUID()}.jpg")
-            imageRef.putFile(uri)
-                .addOnSuccessListener {
-                    imageRef.downloadUrl.addOnSuccessListener { downloadUri ->
-                        viewModel.updateChoiceImageUrl(choiceId, downloadUri.toString())
-                        uploadingChoiceIds.remove(choiceId)
-                    }.addOnFailureListener {
-                        uploadingChoiceIds.remove(choiceId)
-                    }
+            coroutineScope.launch {
+                val url = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, uri)
+                if (url != null) {
+                    viewModel.updateChoiceImageUrl(choiceId, url)
+                } else {
+                    Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
                 }
-                .addOnFailureListener {
-                    uploadingChoiceIds.remove(choiceId)
-                }
+                uploadingChoiceIds.remove(choiceId)
+            }
         }
         activeUploadChoiceId = null
     }
@@ -118,22 +107,15 @@ fun CreateChoicesScreen(
     ) { uri: Uri? ->
         uri?.let {
             isUploadingSavedListImage = true
-            val storageRef = FirebaseStorage.getInstance().reference
-            val imageRef = storageRef.child("lists/${UUID.randomUUID()}.jpg")
-            imageRef.putFile(it)
-                .addOnSuccessListener {
-                    imageRef.downloadUrl.addOnSuccessListener { downloadUri ->
-                        savedListImageUrl = downloadUri.toString()
-                        isUploadingSavedListImage = false
-                    }.addOnFailureListener { e ->
-                        isUploadingSavedListImage = false
-                        Toast.makeText(context, "Url alınamadı: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
+            coroutineScope.launch {
+                val url = com.napsak.app.data.util.ImgbbUploader.uploadImage(context, it)
+                isUploadingSavedListImage = false
+                if (url != null) {
+                    savedListImageUrl = url
+                } else {
+                    Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
                 }
-                .addOnFailureListener { e ->
-                    isUploadingSavedListImage = false
-                    Toast.makeText(context, "Yükleme başarısız: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
+            }
         }
     }
 
@@ -883,27 +865,57 @@ private fun ChoiceListItem(
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Category emoji Box (Replacer for custom photo)
+            // Photo thumbnail or category emoji placeholder (Clickable to upload photo)
             Box(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(CoralPrimary.copy(alpha = 0.08f)),
+                    .background(
+                        if (hasImage) MaterialTheme.colorScheme.surfaceVariant
+                        else CoralPrimary.copy(alpha = 0.08f)
+                    )
+                    .clickable(enabled = !isUploadingImage) { onAddPhotoClick() },
                 contentAlignment = Alignment.Center
             ) {
-                val emoji = when (choice.category.lowercase()) {
-                    "yemek" -> "🍔"
-                    "aktivite" -> "🎬"
-                    "film" -> "🍿"
-                    "eğlence" -> "🎮"
-                    "kahve" -> "☕"
-                    else -> "📝"
+                if (isUploadingImage) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = CoralPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else if (hasImage) {
+                    AsyncImage(
+                        model = choice.imageUrl,
+                        contentDescription = choice.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                } else {
+                    val emoji = when (choice.category.lowercase()) {
+                        "yemek" -> "🍔"
+                        "aktivite" -> "🎬"
+                        "film" -> "🍿"
+                        "eğlence" -> "🎮"
+                        "kahve" -> "☕"
+                        else -> "📝"
+                    }
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = emoji,
+                            fontSize = 20.sp,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Default
+                        )
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Fotoğraf Ekle",
+                            tint = CoralPrimary,
+                            modifier = Modifier
+                                .size(12.dp)
+                                .align(Alignment.BottomEnd)
+                                .background(Color.White, shape = CircleShape)
+                        )
+                    }
                 }
-                Text(
-                    text = emoji,
-                    fontSize = 20.sp,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Default
-                )
             }
             Spacer(modifier = Modifier.width(10.dp))
 
