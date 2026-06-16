@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -165,7 +166,7 @@ fun ListsScreen(
                                                 )
                                             } else {
                                                 Icon(
-                                                    imageVector = Icons.Default.List,
+                                                    imageVector = Icons.Default.Folder,
                                                     contentDescription = null,
                                                     tint = CoralPrimary,
                                                     modifier = Modifier.size(24.dp)
