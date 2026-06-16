@@ -155,7 +155,7 @@ fun ListsScreen(
                                                     "film" -> "\uD83C\uDF7F"
                                                     "eğlence" -> "\uD83C\uDFAE"
                                                     "kahve" -> "\u2615"
-                                                    else -> "\uD83D\uDCCB"
+                                                    else -> "\u2728"
                                                 },
                                                 fontSize = 22.sp,
                                                 fontFamily = androidx.compose.ui.text.font.FontFamily.Default

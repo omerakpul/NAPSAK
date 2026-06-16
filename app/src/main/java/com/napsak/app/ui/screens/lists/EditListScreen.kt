@@ -195,7 +195,52 @@ fun EditListScreen(
                             cursorColor = CoralPrimary
                         )
                     )
-
+                    Spacer(modifier = Modifier.height(12.dp))
+                    // Compact List Cover Image Picker
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .clickable(enabled = !isUploadingListImage) {
+                                    listImagePickerLauncher.launch("image/*")
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isUploadingListImage) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = CoralPrimary,
+                                    strokeWidth = 2.dp
+                                )
+                            } else if (listImageUrl.isNotBlank()) {
+                                AsyncImage(
+                                    model = listImageUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Resim Ekle",
+                                    tint = CoralPrimary.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Column {
+                            Text("Liste Kapak Resmi", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("Galeriden kapak resmi seç (isteğe bağlı)", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                        }
+                    }
                 }
 
                 item {
@@ -377,7 +422,7 @@ fun EditListScreen(
                                         "film" -> "🍿"
                                         "eğlence" -> "🎮"
                                         "kahve" -> "☕"
-                                        else -> "📝"
+                                        else -> "✨"
                                     }
                                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                         Text(

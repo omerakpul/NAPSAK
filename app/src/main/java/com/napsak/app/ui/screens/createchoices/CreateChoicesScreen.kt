@@ -259,7 +259,7 @@ fun CreateChoicesScreen(
                                                 "film" -> "\uD83C\uDF7F"
                                                 "e\u011flence" -> "\uD83C\uDFAE"
                                                 "kahve" -> "\u2615"
-                                                else -> "\uD83D\uDCCB"
+                                                else -> "\u2728"
                                             },
                                             fontSize = 26.sp,
                                             fontFamily = androidx.compose.ui.text.font.FontFamily.Default
@@ -790,7 +790,7 @@ fun CreateChoicesScreen(
                                                     "film" -> "\uD83C\uDF7F"
                                                     "eğlence" -> "\uD83C\uDFAE"
                                                     "kahve" -> "\u2615"
-                                                    else -> "\uD83D\uDCCB"
+                                                    else -> "\u2728"
                                                 },
                                                 fontSize = 18.sp,
                                                 fontFamily = androidx.compose.ui.text.font.FontFamily.Default
@@ -897,7 +897,7 @@ private fun ChoiceListItem(
                         "film" -> "🍿"
                         "eğlence" -> "🎮"
                         "kahve" -> "☕"
-                        else -> "📝"
+                        else -> "✨"
                     }
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
