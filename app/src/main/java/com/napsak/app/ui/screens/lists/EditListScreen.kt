@@ -213,52 +213,7 @@ fun EditListScreen(
                             cursorColor = CoralPrimary
                         )
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    // Compact List Cover Image Picker
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .clickable(enabled = !isUploadingListImage) {
-                                    listImagePickerLauncher.launch("image/*")
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (isUploadingListImage) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    color = CoralPrimary,
-                                    strokeWidth = 2.dp
-                                )
-                            } else if (listImageUrl.isNotBlank()) {
-                                AsyncImage(
-                                    model = listImageUrl,
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "Resim Ekle",
-                                    tint = CoralPrimary.copy(alpha = 0.6f),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                        Column {
-                            Text("Liste Kapak Resmi", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                            Text("Galeriden kapak resmi seç (isteğe bağlı)", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
-                        }
-                    }
+
                 }
 
                 item {
@@ -309,113 +264,6 @@ fun EditListScreen(
                                 )
                             )
 
-                            // Image Picker Section
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(80.dp)
-                                    .clickable(enabled = !isUploadingImage) {
-                                        imagePickerLauncher.launch("image/*")
-                                    },
-                                shape = RoundedCornerShape(14.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                                ),
-                                border = androidx.compose.foundation.BorderStroke(
-                                    1.dp,
-                                    if (newChoiceImageUrl.isNotBlank()) CoralPrimary.copy(alpha = 0.5f)
-                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-                                )
-                            ) {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (newChoiceImageUrl.isNotBlank()) {
-                                        AsyncImage(
-                                            model = newChoiceImageUrl,
-                                            contentDescription = "Seçenek Resmi",
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                                        )
-                                        // Delete button overlay
-                                        Box(
-                                            modifier = Modifier
-                                                .align(Alignment.TopEnd)
-                                                .padding(8.dp)
-                                                .size(32.dp)
-                                                .clip(CircleShape)
-                                                .background(Color.Black.copy(alpha = 0.6f))
-                                                .clickable { newChoiceImageUrl = "" },
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Close,
-                                                contentDescription = "Resmi Kaldır",
-                                                tint = Color.White,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
-                                        // Change photo overlay at the bottom
-                                        Box(
-                                            modifier = Modifier
-                                                .align(Alignment.BottomCenter)
-                                                .fillMaxWidth()
-                                                .background(Color.Black.copy(alpha = 0.5f))
-                                                .padding(vertical = 6.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = "Fotoğrafı Değiştir",
-                                                color = Color.White,
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    } else {
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.Center
-                                        ) {
-                                            if (isUploadingImage) {
-                                                CircularProgressIndicator(
-                                                    color = CoralPrimary,
-                                                    modifier = Modifier.size(28.dp)
-                                                )
-                                                Spacer(modifier = Modifier.height(8.dp))
-                                                Text(
-                                                    text = "Fotoğraf Yükleniyor...",
-                                                    style = MaterialTheme.typography.bodySmall.copy(
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = CoralPrimary
-                                                    )
-                                                )
-                                            } else {
-                                                Icon(
-                                                    imageVector = Icons.Default.Add,
-                                                    contentDescription = "Resim Ekle",
-                                                    tint = CoralPrimary,
-                                                    modifier = Modifier.size(32.dp)
-                                                )
-                                                Spacer(modifier = Modifier.height(6.dp))
-                                                Text(
-                                                    text = "Galeriden Fotoğraf Yükle",
-                                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                                        fontWeight = FontWeight.Bold
-                                                    )
-                                                )
-                                                Text(
-                                                    text = "İsteğe bağlı",
-                                                    style = MaterialTheme.typography.bodySmall.copy(
-                                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                                    )
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
                             Button(
                                 onClick = {
                                     if (newChoiceName.isNotBlank()) {
@@ -424,7 +272,7 @@ fun EditListScreen(
                                                 id = java.util.UUID.randomUUID().toString(),
                                                 name = newChoiceName.trim(),
                                                 details = newChoiceDetails.trim(),
-                                                imageUrl = newChoiceImageUrl.trim().takeIf { it.isNotBlank() },
+                                                imageUrl = null,
                                                 category = listCategoryInput.trim()
                                             )
                                         )
@@ -433,7 +281,7 @@ fun EditListScreen(
                                         newChoiceImageUrl = ""
                                     }
                                 },
-                                enabled = newChoiceName.isNotBlank() && !isUploadingImage,
+                                enabled = newChoiceName.isNotBlank(),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(48.dp),
@@ -511,39 +359,27 @@ fun EditListScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            // Image picker box
+                            // Category emoji Box (Replacer for custom photo)
                             Box(
                                 modifier = Modifier
                                     .size(48.dp)
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .clickable(enabled = !isUploadingThisChoice) {
-                                        activeUploadChoiceId = choice.id
-                                        listChoiceImagePickerLauncher.launch("image/*")
-                                    },
+                                    .background(CoralPrimary.copy(alpha = 0.10f)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                if (isUploadingThisChoice) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(20.dp),
-                                        color = CoralPrimary,
-                                        strokeWidth = 2.dp
-                                    )
-                                } else if (!choice.imageUrl.isNullOrBlank()) {
-                                    AsyncImage(
-                                        model = choice.imageUrl,
-                                        contentDescription = choice.name,
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                                    )
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.Default.Add,
-                                        contentDescription = "Fotoğraf Ekle",
-                                        tint = CoralPrimary.copy(alpha = 0.6f),
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                                val emoji = when (listCategoryInput.lowercase()) {
+                                    "yemek" -> "🍔"
+                                    "aktivite" -> "🎬"
+                                    "film" -> "🍿"
+                                    "eğlence" -> "🎮"
+                                    "kahve" -> "☕"
+                                    else -> "📝"
                                 }
+                                Text(
+                                    text = emoji,
+                                    fontSize = 22.sp,
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Default
+                                )
                             }
 
                             Column(modifier = Modifier.weight(1f)) {

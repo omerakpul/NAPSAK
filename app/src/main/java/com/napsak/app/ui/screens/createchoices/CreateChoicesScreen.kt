@@ -396,86 +396,6 @@ fun CreateChoicesScreen(
                         }
                     }
 
-                    // Image Picker Section (Compact)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                            .clickable(enabled = !isUploadingImage) {
-                                imagePickerLauncher.launch("image/*")
-                            }
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        if (uiState.currentImageUrl.isNotBlank()) {
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                            ) {
-                                AsyncImage(
-                                    model = uiState.currentImageUrl,
-                                    contentDescription = "Se\u00e7enek Resmi",
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                                )
-                            }
-                            Text(
-                                text = "Foto\u011fraf Y\u00fcklendi",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = CoralPrimary
-                                ),
-                                modifier = Modifier.weight(1f)
-                            )
-                            // Delete button
-                            Box(
-                                modifier = Modifier
-                                    .size(28.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFE57373).copy(alpha = 0.12f))
-                                    .clickable { viewModel.onImageUrlChange("") },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Resmi Kald\u0131r",
-                                    tint = Color(0xFFE57373),
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
-                        } else if (isUploadingImage) {
-                            CircularProgressIndicator(
-                                color = CoralPrimary,
-                                modifier = Modifier.size(18.dp),
-                                strokeWidth = 2.dp
-                            )
-                            Text(
-                                text = "Y\u00fckleniyor...",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = CoralPrimary
-                                )
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Resim Ekle",
-                                tint = CoralPrimary.copy(alpha = 0.7f),
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = "Foto\u011fraf Ekle (\u0130ste\u011fe ba\u011fl\u0131)",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                )
-                            )
-                        }
-                    }
-
                     // Add / Save Edit Button
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -502,7 +422,7 @@ fun CreateChoicesScreen(
                             },
                             modifier = Modifier.weight(2f).height(48.dp),
                             shape = RoundedCornerShape(14.dp),
-                            enabled = uiState.currentName.isNotBlank() && !isUploadingImage,
+                            enabled = uiState.currentName.isNotBlank(),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (uiState.isEditing) AmberSecondary else CoralPrimary
                             )
@@ -963,52 +883,27 @@ private fun ChoiceListItem(
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Photo thumbnail or camera placeholder
+            // Category emoji Box (Replacer for custom photo)
             Box(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(
-                        if (hasImage) MaterialTheme.colorScheme.surfaceVariant
-                        else CoralPrimary.copy(alpha = 0.08f)
-                    )
-                    .clickable(enabled = !isUploadingImage) { onAddPhotoClick() },
+                    .background(CoralPrimary.copy(alpha = 0.08f)),
                 contentAlignment = Alignment.Center
             ) {
-                if (isUploadingImage) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        color = CoralPrimary,
-                        strokeWidth = 2.dp
-                    )
-                } else if (hasImage) {
-                    AsyncImage(
-                        model = choice.imageUrl,
-                        contentDescription = choice.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                    )
-                } else {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Fotoğraf Ekle",
-                            tint = CoralPrimary.copy(alpha = 0.5f),
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Text(
-                            text = "Foto",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 8.sp,
-                                color = CoralPrimary.copy(alpha = 0.5f),
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
+                val emoji = when (choice.category.lowercase()) {
+                    "yemek" -> "🍔"
+                    "aktivite" -> "🎬"
+                    "film" -> "🍿"
+                    "eğlence" -> "🎮"
+                    "kahve" -> "☕"
+                    else -> "📝"
                 }
+                Text(
+                    text = emoji,
+                    fontSize = 20.sp,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Default
+                )
             }
             Spacer(modifier = Modifier.width(10.dp))
 
