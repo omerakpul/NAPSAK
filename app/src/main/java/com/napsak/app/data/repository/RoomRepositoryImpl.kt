@@ -22,12 +22,12 @@ import kotlin.coroutines.resume
 
 @Singleton
 class RoomRepositoryImpl @Inject constructor(
+    private val auth: FirebaseAuth,
+    private val db: FirebaseDatabase,
     private val userPreferencesDataSource: UserPreferencesDataSource
 ) : RoomRepository {
 
-    private val db = FirebaseDatabase.getInstance("https://napsak-official-default-rtdb.europe-west1.firebasedatabase.app")
     private val roomsRef = db.getReference("rooms")
-    private val auth = FirebaseAuth.getInstance()
 
     private suspend fun getOrSignInUserId(): String {
         val currentUser = auth.currentUser
