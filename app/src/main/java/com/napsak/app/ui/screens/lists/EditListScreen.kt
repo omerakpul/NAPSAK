@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -422,14 +423,23 @@ fun EditListScreen(
                                         "film" -> "🍿"
                                         "eğlence" -> "🎮"
                                         "kahve" -> "☕"
-                                        else -> "✨"
+                                        else -> null
                                     }
                                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                        Text(
-                                            text = emoji,
-                                            fontSize = 22.sp,
-                                            fontFamily = androidx.compose.ui.text.font.FontFamily.Default
-                                        )
+                                        if (emoji != null) {
+                                            Text(
+                                                text = emoji,
+                                                fontSize = 22.sp,
+                                                fontFamily = androidx.compose.ui.text.font.FontFamily.Default
+                                            )
+                                        } else {
+                                            Icon(
+                                                imageVector = Icons.Default.List,
+                                                contentDescription = null,
+                                                tint = CoralPrimary,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
                                         Icon(
                                             imageVector = Icons.Default.Add,
                                             contentDescription = "Fotoğraf Ekle",

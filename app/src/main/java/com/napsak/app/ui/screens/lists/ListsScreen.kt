@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -148,18 +149,28 @@ fun ListsScreen(
                                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop
                                             )
                                         } else {
-                                            Text(
-                                                text = when (list.category.lowercase()) {
-                                                    "yemek" -> "\uD83C\uDF54"
-                                                    "aktivite" -> "\uD83C\uDFAC"
-                                                    "film" -> "\uD83C\uDF7F"
-                                                    "eğlence" -> "\uD83C\uDFAE"
-                                                    "kahve" -> "\u2615"
-                                                    else -> "\u2728"
-                                                },
-                                                fontSize = 22.sp,
-                                                fontFamily = androidx.compose.ui.text.font.FontFamily.Default
-                                            )
+                                            val emoji = when (list.category.lowercase()) {
+                                                "yemek" -> "\uD83C\uDF54"
+                                                "aktivite" -> "\uD83C\uDFAC"
+                                                "film" -> "\uD83C\uDF7F"
+                                                "eğlence" -> "\uD83C\uDFAE"
+                                                "kahve" -> "\u2615"
+                                                else -> null
+                                            }
+                                            if (emoji != null) {
+                                                Text(
+                                                    text = emoji,
+                                                    fontSize = 22.sp,
+                                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Default
+                                                )
+                                            } else {
+                                                Icon(
+                                                    imageVector = Icons.Default.List,
+                                                    contentDescription = null,
+                                                    tint = CoralPrimary,
+                                                    modifier = Modifier.size(24.dp)
+                                                )
+                                            }
                                         }
                                     }
 

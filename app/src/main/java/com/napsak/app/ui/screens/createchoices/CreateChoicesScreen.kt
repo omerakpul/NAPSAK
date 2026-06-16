@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -252,18 +253,28 @@ fun CreateChoicesScreen(
                                             contentScale = androidx.compose.ui.layout.ContentScale.Crop
                                         )
                                     } else {
-                                        Text(
-                                            text = when (template.category.lowercase()) {
-                                                "yemek" -> "\uD83C\uDF54"
-                                                "aktivite" -> "\uD83C\uDFAC"
-                                                "film" -> "\uD83C\uDF7F"
-                                                "e\u011flence" -> "\uD83C\uDFAE"
-                                                "kahve" -> "\u2615"
-                                                else -> "\u2728"
-                                            },
-                                            fontSize = 26.sp,
-                                            fontFamily = androidx.compose.ui.text.font.FontFamily.Default
-                                        )
+                                        val emoji = when (template.category.lowercase()) {
+                                            "yemek" -> "\uD83C\uDF54"
+                                            "aktivite" -> "\uD83C\uDFAC"
+                                            "film" -> "\uD83C\uDF7F"
+                                            "e\u011flence" -> "\uD83C\uDFAE"
+                                            "kahve" -> "\u2615"
+                                            else -> null
+                                        }
+                                        if (emoji != null) {
+                                            Text(
+                                                text = emoji,
+                                                fontSize = 26.sp,
+                                                fontFamily = androidx.compose.ui.text.font.FontFamily.Default
+                                            )
+                                        } else {
+                                            Icon(
+                                                imageVector = Icons.Default.List,
+                                                contentDescription = null,
+                                                tint = CoralPrimary,
+                                                modifier = Modifier.size(28.dp)
+                                            )
+                                        }
                                     }
                                 }
                                 Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
@@ -783,18 +794,28 @@ fun CreateChoicesScreen(
                                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop
                                             )
                                         } else {
-                                            Text(
-                                                text = when (savedList.category.lowercase()) {
-                                                    "yemek" -> "\uD83C\uDF54"
-                                                    "aktivite" -> "\uD83C\uDFAC"
-                                                    "film" -> "\uD83C\uDF7F"
-                                                    "eğlence" -> "\uD83C\uDFAE"
-                                                    "kahve" -> "\u2615"
-                                                    else -> "\u2728"
-                                                },
-                                                fontSize = 18.sp,
-                                                fontFamily = androidx.compose.ui.text.font.FontFamily.Default
-                                            )
+                                            val emoji = when (savedList.category.lowercase()) {
+                                                "yemek" -> "\uD83C\uDF54"
+                                                "aktivite" -> "\uD83C\uDFAC"
+                                                "film" -> "\uD83C\uDF7F"
+                                                "eğlence" -> "\uD83C\uDFAE"
+                                                "kahve" -> "\u2615"
+                                                else -> null
+                                            }
+                                            if (emoji != null) {
+                                                Text(
+                                                    text = emoji,
+                                                    fontSize = 18.sp,
+                                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Default
+                                                )
+                                            } else {
+                                                Icon(
+                                                    imageVector = Icons.Default.List,
+                                                    contentDescription = null,
+                                                    tint = CoralPrimary,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
                                         }
                                     }
 
@@ -897,14 +918,23 @@ private fun ChoiceListItem(
                         "film" -> "🍿"
                         "eğlence" -> "🎮"
                         "kahve" -> "☕"
-                        else -> "✨"
+                        else -> null
                     }
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = emoji,
-                            fontSize = 20.sp,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Default
-                        )
+                        if (emoji != null) {
+                            Text(
+                                text = emoji,
+                                fontSize = 20.sp,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Default
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.List,
+                                contentDescription = null,
+                                tint = CoralPrimary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Fotoğraf Ekle",
