@@ -15,8 +15,10 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import java.io.FileOutputStream
 
+import com.napsak.app.BuildConfig
+
 object ImgbbUploader {
-    private const val API_KEY = "BuildConfig.IMGBB_API_KEY"
+    private val API_KEY = BuildConfig.IMGBB_API_KEY
     private val client = OkHttpClient()
     private val json = Json { ignoreUnknownKeys = true }
 
