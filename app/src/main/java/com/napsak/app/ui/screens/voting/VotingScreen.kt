@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.activity.compose.BackHandler
 import coil3.compose.AsyncImage
+import com.napsak.app.domain.model.VoteMode
+import com.napsak.app.ui.OptionEmoji
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -51,6 +53,7 @@ fun VotingScreen(
 
     val allChoices by sharedViewModel.choices.collectAsState()
     val choices = remember(allChoices) { allChoices.toList() }
+    val voteMode by sharedViewModel.voteMode.collectAsState()
 
     // Track liked choices
     val likedChoices = remember { mutableStateListOf<Choice>() }
@@ -129,11 +132,11 @@ fun VotingScreen(
     }
 
     // Countdown Timer Effect
-    LaunchedEffect(timeLeft, currentIndex, choices.size) {
-        if (choices.isNotEmpty() && timeLeft > 0 && currentIndex < choices.size) {
+    LaunchedEffect(timeLeft, currentIndex, choices.size, voteMode) {
+        if (voteMode == VoteMode.LIKE && choices.isNotEmpty() && timeLeft > 0 && currentIndex < choices.size) {
             kotlinx.coroutines.delay(1000L)
             timeLeft--
-        } else if (choices.isNotEmpty() && timeLeft == 0 && currentIndex < choices.size) {
+        } else if (voteMode == VoteMode.LIKE && choices.isNotEmpty() && timeLeft == 0 && currentIndex < choices.size) {
             // Time's up! Force finish voting
             currentIndex = choices.size
         }
@@ -178,14 +181,18 @@ fun VotingScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "SEÇENEKLERİ SWIPE'LA",
+                    text = when (voteMode) {
+                        VoteMode.LIKE -> "SEÇENEKLERİ SWIPE'LA"
+                        VoteMode.SINGLE -> "BİRİNİ SEÇ"
+                        VoteMode.RANK -> "SIRALA"
+                    },
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
                         letterSpacing = 2.sp
                     )
                 )
-                if (currentIndex < choices.size) {
+                if (voteMode == VoteMode.LIKE && currentIndex < choices.size) {
                     Text(
                         text = "Kalan Süre: ${timeLeft}s",
                         style = MaterialTheme.typography.titleSmall.copy(
@@ -199,7 +206,11 @@ fun VotingScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "${currentIndex.coerceAtMost(choices.size)} / ${choices.size}",
+                text = when (voteMode) {
+                    VoteMode.LIKE -> "${currentIndex.coerceAtMost(choices.size)} / ${choices.size}"
+                    VoteMode.SINGLE -> "En çok istediğin seçeneği işaretle"
+                    VoteMode.RANK -> "En iyi en üstte olacak şekilde sırala"
+                },
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )
@@ -214,7 +225,19 @@ fun VotingScreen(
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                if (currentChoice != null) {
+                if (currentChoice != null && voteMode == VoteMode.SINGLE) {
+                    SingleChoiceVoting(choices) { pick ->
+                        likedChoices.clear()
+                        likedChoices.add(pick)
+                        currentIndex = choices.size
+                    }
+                } else if (currentChoice != null && voteMode == VoteMode.RANK) {
+                    RankingVoting(choices) { ordered ->
+                        likedChoices.clear()
+                        likedChoices.addAll(ordered)
+                        currentIndex = choices.size
+                    }
+                } else if (currentChoice != null) {
                     SwipeableCard(
                         choice = currentChoice,
                         onSwipeLeft = { registerSwipe(false) },
@@ -327,7 +350,7 @@ fun VotingScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Action Buttons (Cross & Heart)
-            if (currentChoice != null) {
+            if (currentChoice != null && voteMode == VoteMode.LIKE) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
@@ -620,6 +643,8 @@ fun SwipeableCard(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
+                        OptionEmoji(choice.name, choice.category, size = 110.dp)
+                        Spacer(modifier = Modifier.height(20.dp))
                         if (choice.category.isNotBlank()) {
                             Box(
                                 modifier = Modifier

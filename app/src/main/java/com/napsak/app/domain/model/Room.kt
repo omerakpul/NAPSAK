@@ -9,6 +9,18 @@ enum class RoomState {
     RESULT
 }
 
+/** LIKE: like any options. SINGLE: pick exactly one. RANK: order all options (Borda points). */
+enum class VoteMode { LIKE, SINGLE, RANK }
+
+/** An option proposed by a participant; only the host (and the author) can see it. */
+@Serializable
+data class Suggestion(
+    val id: String = "",
+    val userId: String = "",
+    val name: String = "",
+    val details: String = ""
+)
+
 @Serializable
 data class Participant(
     val id: String = "",
@@ -37,7 +49,9 @@ data class Room(
     val winnerChoiceId: String? = null,
     val createdAt: Long = 0L,
     val participants: Map<String, Participant> = emptyMap(),
-    val choices: Map<String, Choice> = emptyMap()
+    val choices: Map<String, Choice> = emptyMap(),
+    val voteMode: VoteMode = VoteMode.LIKE,
+    val suggestions: List<Suggestion> = emptyList()
 )
 
 @Serializable

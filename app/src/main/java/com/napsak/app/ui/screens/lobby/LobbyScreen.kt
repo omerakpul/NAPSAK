@@ -75,6 +75,7 @@ fun LobbyScreen(
         if (roomState?.state == RoomState.VOTING) {
             val roomChoices = roomState?.choices?.values?.toList() ?: emptyList()
             sharedViewModel.setChoices(roomChoices)
+            roomState?.let { sharedViewModel.setVoteMode(it.voteMode) }
             onNavigateToVoting(roomId)
         }
     }
@@ -312,6 +313,27 @@ fun LobbyScreen(
                         }
                     }
                 }
+
+                // Participants can propose options; the host sees them on the next screen
+                if (!isHost) {
+                    item {
+                        SuggestionForm(
+                            mine = room.suggestions.filter { it.userId == currentUserId },
+                            onSubmit = { name, details, onResult -> viewModel.suggestChoice(roomId, name, details, onResult) },
+                            onRemove = { viewModel.dismissSuggestion(roomId, it.id) }
+                        )
+                    }
+                } else if (room.suggestions.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "${room.suggestions.size} öneri geldi, sonraki ekranda görebilirsin.",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -331,7 +353,8 @@ fun LobbyScreen(
                         .height(50.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isReady) Color(0xFF4CAF50) else MaterialTheme.colorScheme.secondary
+                        containerColor = if (isReady) Color(0xFF4CAF50) else MaterialTheme.colorScheme.secondary,
+                        contentColor = if (isReady) Color.White else MaterialTheme.colorScheme.onSecondary
                     )
                 ) {
                     Icon(

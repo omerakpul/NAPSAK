@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.napsak.app.ui.screens.createchoices.CreateChoicesScreen
+import com.napsak.app.ui.screens.history.HistoryScreen
 import com.napsak.app.ui.screens.home.HomeScreen
 import com.napsak.app.ui.screens.lists.ListsScreen
 import com.napsak.app.ui.screens.lists.EditListScreen
@@ -45,6 +46,9 @@ fun NapsakNavGraph(
                 }
             )
         }
+        composable<Screen.History> {
+            HistoryScreen()
+        }
         composable<Screen.EditList> { backStackEntry ->
             val editList = backStackEntry.toRoute<Screen.EditList>()
             EditListScreen(
@@ -78,8 +82,9 @@ fun NapsakNavGraph(
             val createChoices = backStackEntry.toRoute<Screen.CreateChoices>()
             CreateChoicesScreen(
                 roomId = createChoices.roomId,
-                onNavigateToVoting = { roomId, choices ->
+                onNavigateToVoting = { roomId, choices, mode ->
                     sharedViewModel.setChoices(choices)
+                    sharedViewModel.setVoteMode(mode)
                     navController.navigate(Screen.Voting(roomId)) {
                         popUpTo(Screen.Home) { saveState = true }
                     }

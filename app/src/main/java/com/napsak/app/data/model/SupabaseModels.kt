@@ -4,6 +4,8 @@ import com.napsak.app.domain.model.Choice
 import com.napsak.app.domain.model.Participant
 import com.napsak.app.domain.model.Room
 import com.napsak.app.domain.model.RoomState
+import com.napsak.app.domain.model.Suggestion
+import com.napsak.app.domain.model.VoteMode
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.OffsetDateTime
@@ -43,20 +45,37 @@ data class ChoiceDto(
 }
 
 @Serializable
+data class SuggestionDto(
+    val id: String,
+    @SerialName("user_id") val userId: String = "",
+    val name: String = "",
+    val details: String = ""
+) {
+    fun toDomain() = Suggestion(id = id, userId = userId, name = name, details = details)
+}
+
+@Serializable
 data class RoomDto(
     val id: String,
     @SerialName("host_id") val hostId: String,
     val state: String = "WAITING",
     @SerialName("winner_choice_id") val winnerChoiceId: String? = null,
-    @SerialName("created_at") val createdAt: String? = null
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("vote_mode") val voteMode: String = "LIKE"
 ) {
-    fun toDomain(participants: List<ParticipantDto>, choices: List<ChoiceDto>) = Room(
+    fun toDomain(
+        participants: List<ParticipantDto>,
+        choices: List<ChoiceDto>,
+        suggestions: List<SuggestionDto> = emptyList()
+    ) = Room(
         id = id,
         hostId = hostId,
         state = runCatching { RoomState.valueOf(state) }.getOrDefault(RoomState.WAITING),
         winnerChoiceId = winnerChoiceId,
         createdAt = createdAt?.let { runCatching { OffsetDateTime.parse(it).toInstant().toEpochMilli() }.getOrNull() } ?: 0L,
         participants = participants.associate { it.userId to it.toDomain() },
-        choices = choices.associate { it.id to it.toDomain() } // keeps server order (position)
+        choices = choices.associate { it.id to it.toDomain() }, // keeps server order (position)
+        voteMode = runCatching { VoteMode.valueOf(voteMode) }.getOrDefault(VoteMode.LIKE),
+        suggestions = suggestions.map { it.toDomain() }
     )
 }

@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.Icon
@@ -58,7 +59,7 @@ class MainActivity : ComponentActivity() {
                 val currentDestination = navBackStackEntry?.destination
                 
                 val showBottomBar = currentDestination?.let { dest ->
-                    dest.hasRoute<Screen.Home>() || dest.hasRoute<Screen.Lists>()
+                    dest.hasRoute<Screen.Home>() || dest.hasRoute<Screen.Lists>() || dest.hasRoute<Screen.History>()
                 } ?: false
                 
                 Scaffold(
@@ -103,6 +104,27 @@ class MainActivity : ComponentActivity() {
                                     },
                                     icon = { Icon(Icons.Default.List, contentDescription = "Listeler") },
                                     label = { Text("Listeler") },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                                        indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    )
+                                )
+                                NavigationBarItem(
+                                    selected = currentDestination?.hasRoute<Screen.History>() == true,
+                                    onClick = {
+                                        navController.navigate(Screen.History) {
+                                            popUpTo(navController.graph.startDestinationId) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    },
+                                    icon = { Icon(Icons.Default.History, contentDescription = "Geçmiş") },
+                                    label = { Text("Geçmiş") },
                                     colors = NavigationBarItemDefaults.colors(
                                         selectedIconColor = MaterialTheme.colorScheme.primary,
                                         selectedTextColor = MaterialTheme.colorScheme.primary,

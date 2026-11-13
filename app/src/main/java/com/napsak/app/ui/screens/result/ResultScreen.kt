@@ -28,6 +28,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import androidx.compose.material.icons.filled.Share
+import com.napsak.app.domain.model.VoteMode
+import com.napsak.app.ui.OptionEmoji
+import com.napsak.app.ui.ShareCard
 import com.napsak.app.domain.model.Choice
 import com.napsak.app.ui.screens.shared.SharedSessionViewModel
 import com.napsak.app.ui.theme.CoralPrimary
@@ -43,6 +47,7 @@ fun ResultScreen(
     val winnerChoice by sharedViewModel.winnerChoice.collectAsState()
     val currentRoom by sharedViewModel.currentRoom.collectAsState()
 
+    val unit = if (currentRoom?.voteMode == VoteMode.RANK) "Puan" else "Oy"
     val choices = currentRoom?.choices?.values?.toList() ?: emptyList()
     val maxVotes = choices.maxOfOrNull { it.voteCount } ?: 0
     val candidates = if (maxVotes > 0) {
@@ -91,6 +96,11 @@ fun ResultScreen(
     }
 
     val winner = displayedChoice ?: winnerChoice!!
+
+    // Keep a private on-device record of every finished decision
+    LaunchedEffect(isRaffleActive, winnerChoice) {
+        if (!isRaffleActive && winnerChoice != null) sharedViewModel.recordHistory(roomId)
+    }
 
     val gradient = Brush.horizontalGradient(
         colors = listOf(CoralPrimary, CoralPrimaryDark)
@@ -184,7 +194,7 @@ fun ResultScreen(
                                         onClick = {},
                                         label = {
                                             Text(
-                                                text = if (isRaffleActive) "? Oy" else "${winner.voteCount} Oy",
+                                                text = if (isRaffleActive) "? $unit" else "${winner.voteCount} $unit",
                                                 fontWeight = FontWeight.Bold,
                                                 color = CoralPrimary
                                             )
@@ -212,6 +222,8 @@ fun ResultScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
+                            OptionEmoji(winner.name, winner.category, size = 120.dp)
+                            Spacer(modifier = Modifier.height(20.dp))
                             Text(
                                 text = winner.name,
                                 style = MaterialTheme.typography.headlineMedium.copy(
@@ -227,7 +239,7 @@ fun ResultScreen(
                                 onClick = {},
                                 label = {
                                     Text(
-                                        text = if (isRaffleActive) "? Oy" else "${winner.voteCount} Oy",
+                                        text = if (isRaffleActive) "? $unit" else "${winner.voteCount} $unit",
                                         fontWeight = FontWeight.Bold,
                                         color = CoralPrimary,
                                         fontSize = 16.sp
@@ -306,6 +318,28 @@ fun ResultScreen(
                                 )
                             }
                         }
+                    }
+                }
+
+                // Share the result as an image card
+                if (!isRaffleActive) {
+                    OutlinedButton(
+                        onClick = {
+                            ShareCard.share(
+                                context,
+                                winner,
+                                "${winner.voteCount} $unit",
+                                currentRoom?.participants?.size ?: 1
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Share, contentDescription = "Paylaş")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Sonucu Paylaş", fontWeight = FontWeight.Bold)
                     }
                 }
 

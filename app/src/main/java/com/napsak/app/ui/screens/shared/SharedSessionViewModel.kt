@@ -2,7 +2,11 @@ package com.napsak.app.ui.screens.shared
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.napsak.app.data.datasource.UserPreferencesDataSource
 import com.napsak.app.domain.model.Choice
+import com.napsak.app.domain.model.HistoryEntry
+import com.napsak.app.domain.model.VoteMode
+import java.util.UUID
 import com.napsak.app.domain.model.Room
 import com.napsak.app.domain.model.RoomState
 import com.napsak.app.domain.repository.RoomRepository
@@ -29,11 +33,42 @@ class SharedSessionViewModel @Inject constructor(
     private val endVotingUseCase: EndVotingUseCase,
     private val deleteRoomUseCase: DeleteRoomUseCase,
     private val leaveRoomUseCase: LeaveRoomUseCase,
+    private val preferences: UserPreferencesDataSource,
     private val roomRepository: RoomRepository
 ) : ViewModel() {
 
     private val _choices = MutableStateFlow<List<Choice>>(emptyList())
     val choices: StateFlow<List<Choice>> = _choices.asStateFlow()
+
+    private val _voteMode = MutableStateFlow(VoteMode.LIKE)
+    val voteMode: StateFlow<VoteMode> = _voteMode.asStateFlow()
+
+    fun setVoteMode(mode: VoteMode) {
+        _voteMode.value = mode
+    }
+
+    /** Saves the finished decision to the on-device history (once per room). */
+    fun recordHistory(roomId: String) {
+        val winner = _winnerChoice.value ?: return
+        val room = _currentRoom.value
+        viewModelScope.launch {
+            preferences.addHistory(
+                HistoryEntry(
+                    id = UUID.randomUUID().toString(),
+                    roomId = roomId,
+                    winnerName = winner.name,
+                    winnerDetails = winner.details,
+                    winnerCategory = winner.category,
+                    winnerImageUrl = winner.imageUrl,
+                    winnerVotes = winner.voteCount,
+                    mode = room?.voteMode ?: _voteMode.value,
+                    participantCount = room?.participants?.size ?: 1,
+                    options = (room?.choices?.values?.toList() ?: _choices.value).map { it.name },
+                    finishedAt = System.currentTimeMillis()
+                )
+            )
+        }
+    }
 
     private val _winnerChoice = MutableStateFlow<Choice?>(null)
     val winnerChoice: StateFlow<Choice?> = _winnerChoice.asStateFlow()
@@ -66,6 +101,7 @@ class SharedSessionViewModel @Inject constructor(
             observeRoomUseCase(roomId).collect { room ->
                 _currentRoom.value = room
                 if (room != null) {
+                    _voteMode.value = room.voteMode
                     val isHost = room.hostId == _currentUserId.value
                     // If participant and voting state transitions to RESULT, load the declared winner
                     if (!isHost && room.state == RoomState.RESULT && room.winnerChoiceId != null) {

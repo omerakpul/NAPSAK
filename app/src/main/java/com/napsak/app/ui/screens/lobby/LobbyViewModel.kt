@@ -47,6 +47,14 @@ class LobbyViewModel @Inject constructor(
         }
     }
 
+    fun suggestChoice(roomId: String, name: String, details: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch { onResult(roomRepository.suggestChoice(roomId, name, details).isSuccess) }
+    }
+
+    fun dismissSuggestion(roomId: String, suggestionId: String) {
+        viewModelScope.launch { roomRepository.dismissSuggestion(roomId, suggestionId) }
+    }
+
     fun leaveRoom(roomId: String) {
         viewModelScope.launch { leaveRoomUseCase(roomId) }
     }
