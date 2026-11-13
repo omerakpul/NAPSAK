@@ -1,0 +1,29 @@
+name: Supabase keep-alive
+
+# Free Supabase projects are paused after a week without activity. A small read every few days keeps
+# the project awake; if the project is already paused or unreachable, this workflow fails and GitHub
+# emails the repository owner.
+on:
+  schedule:
+    - cron: "23 6 */3 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query the API
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Missing SUPABASE_URL / SUPABASE_ANON_KEY secrets"; exit 1
+          fi
+          code=$(curl -s -o /dev/null -w "%{http_code}" --retry 3 --retry-delay 5 --max-time 20 \
+            "$SUPABASE_URL/rest/v1/rooms?select=id&limit=1" -H "apikey: $SUPABASE_ANON_KEY")
+          echo "Supabase REST status: $code"
+          [ "$code" = "200" ]

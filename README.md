@@ -24,6 +24,7 @@ The project has a native **Android client** (Jetpack Compose, Clean Architecture
 * **Idle voters:** everyone sees who is still missing; after 45 s the host is asked whether to wait or show the results.
 * **Host from the web too:** the web client can create a room, build the options (templates, pasted lists, players' suggestions), pick the vote mode, start and finish the vote.
 * **Accessibility:** screen-reader labels and swipe actions, headings and live announcements, 48 dp touch targets, readable at 2x font size, light/dark contrast, reduced-motion support on the web.
+* **Stays awake:** a scheduled GitHub Action reads from the API every 3 days so the free Supabase project is not paused for inactivity (it fails, and emails the owner, if the project is unreachable).
 * **Leaving & cleanup:** leaving the lobby removes you from the room (the host leaving closes it); rooms live while they are used (3 days of inactivity) and abandoned ones are deleted hourly by `pg_cron`.
 * **Local lists:** preset and user-created option lists are stored on device with Preferences DataStore.
 
