@@ -13,7 +13,11 @@ The project has a native **Android client** (Jetpack Compose, Clean Architecture
 * **Server-enforced rules:** all writes go through `SECURITY DEFINER` Postgres functions. One vote per player, secret ballots, only the host can start/end voting, and the host can only pick a winner among the top-voted options. Clients cannot write tables directly (Row Level Security has no write policies).
 * **Anonymous sign-in:** no accounts; each device gets an anonymous Supabase user.
 * **Easy joining:** the invite link opens the app (Android deep link) or the web page and pre-fills the room code; the QR code is generated on device (no third-party service); tapping the room code copies it. If you leave the app mid-lobby, Home offers to take you back to your unfinished room.
+* **Three vote modes** (chosen by the host): *Like* (swipe through options), *Single pick* (everyone chooses one) and *Rank* (everyone orders all options, Borda points). Ties are resolved by a raffle; the server stores the result.
 * **Voting:** swipe or tap, undo the previous card, haptic feedback, countdown, live progress; the host can close voting if someone is idle.
+* **Building the option list:** pick templates, paste a list (one option per line, `Name - details`), search a place on the map (OpenStreetMap Nominatim, no API key) that fills name, address and coordinates, or accept **suggestions** that participants send from the lobby (max 5 each, visible only to the host and the author).
+* **Result:** shareable image card of the winner (drawn on device), plus a private on-device **history** of past decisions (`Geçmiş` tab).
+* **Look:** photo-less options get an emoji and accent colour from their name/category; light and dark themes.
 * **Image pipeline:** images are validated (10 MB source limit), downscaled to ≤1024 px and JPEG-compressed on device, then uploaded to a public Supabase Storage bucket (`choice-images`, 2 MB cap, owner-only write).
 * **Image retention:** uploaded images are intentionally not auto-deleted, because users' saved lists (stored on their device) keep referencing the URLs. Each file is ≤2 MB after compression, and an uploader can delete their own objects.
 * **Leaving & cleanup:** leaving the lobby removes you from the room (the host leaving closes it); rooms live while they are used (3 days of inactivity) and abandoned ones are deleted hourly by `pg_cron`.
@@ -63,7 +67,7 @@ Realtime events are only a *trigger*: on any change the client re-reads the whol
 ./gradlew connectedDebugAndroidTest              # needs an emulator/device and network
 ```
 
-`SupabaseRoomFlowTest` is an end-to-end test against the live Supabase project: two anonymous users create/join a room, go through voting and results observing each other via Realtime, leave and delete the room, and upload an image.
+`SupabaseRoomFlowTest` is an end-to-end test against the live Supabase project: two anonymous users create/join a room, go through voting and results observing each other via Realtime, exercise suggestions and the Single/Rank modes, leave and delete the room, and upload an image. `PlaceSearchTest` checks OpenStreetMap search live, `QrCodeTest` / `ShareCardTest` check on-device QR and share-card rendering.
 
 ---
 
