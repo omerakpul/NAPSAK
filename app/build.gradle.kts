@@ -81,6 +81,7 @@ dependencies {
 
     // Coil (Image Loading)
     implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
 
     // Supabase
     implementation(platform(libs.supabase.bom))

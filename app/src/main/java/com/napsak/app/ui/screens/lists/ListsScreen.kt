@@ -143,7 +143,7 @@ fun ListsScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         if (!list.imageUrl.isNullOrBlank()) {
-                                            coil.compose.AsyncImage(
+                                            coil3.compose.AsyncImage(
                                                 model = list.imageUrl,
                                                 contentDescription = null,
                                                 modifier = Modifier.fillMaxSize(),

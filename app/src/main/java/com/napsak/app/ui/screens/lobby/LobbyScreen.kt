@@ -26,7 +26,7 @@ import com.napsak.app.ui.theme.AmberSecondary
 import com.napsak.app.ui.theme.CoralPrimary
 import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 
 import com.napsak.app.ui.screens.shared.SharedSessionViewModel
 
