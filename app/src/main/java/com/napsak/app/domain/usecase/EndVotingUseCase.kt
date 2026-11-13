@@ -6,7 +6,8 @@ import javax.inject.Inject
 class EndVotingUseCase @Inject constructor(
     private val repository: RoomRepository
 ) {
-    suspend operator fun invoke(roomId: String, winnerChoiceId: String): Result<Unit> {
+    /** Returns the winner choice id stored by the server. */
+    suspend operator fun invoke(roomId: String, winnerChoiceId: String? = null): Result<String> {
         return repository.endVotingAndSetWinner(roomId, winnerChoiceId)
     }
 }

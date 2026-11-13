@@ -1,327 +1,195 @@
 package com.napsak.app.data.repository
 
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.*
 import com.napsak.app.data.datasource.UserPreferencesDataSource
+import com.napsak.app.data.model.ChoiceDto
+import com.napsak.app.data.model.ParticipantDto
 import com.napsak.app.data.model.RoomDto
+import com.napsak.app.data.remote.SupabaseSession
 import com.napsak.app.domain.model.Choice
-import com.napsak.app.domain.model.Participant
 import com.napsak.app.domain.model.Room
-import com.napsak.app.domain.model.RoomState
 import com.napsak.app.domain.repository.RoomRepository
-import kotlinx.coroutines.channels.awaitClose
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.status.SessionStatus
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
+import io.github.jan.supabase.realtime.realtime
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
-import java.util.UUID
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.coroutines.resume
 
 @Singleton
 class RoomRepositoryImpl @Inject constructor(
-    private val auth: FirebaseAuth,
-    private val db: FirebaseDatabase,
+    private val supabase: SupabaseClient,
+    private val session: SupabaseSession,
     private val userPreferencesDataSource: UserPreferencesDataSource
 ) : RoomRepository {
 
-    private val roomsRef = db.getReference("rooms")
+    private suspend fun rpc(function: String, params: JsonObject = JsonObject(emptyMap())) =
+        supabase.postgrest.rpc(function, params)
 
-    private suspend fun getOrSignInUserId(): String {
-        val currentUser = auth.currentUser
-        if (currentUser != null) {
-            return currentUser.uid
-        }
-        return suspendCancellableCoroutine { continuation ->
-            auth.signInAnonymously()
-                .addOnSuccessListener { authResult ->
-                    val uid = authResult.user?.uid ?: UUID.randomUUID().toString()
-                    continuation.resume(uid)
-                }
-                .addOnFailureListener { exception ->
-                    if (continuation.isActive) {
-                        continuation.resumeWith(Result.failure(exception))
-                    }
-                }
-        }
+    private fun Throwable.friendly(): Throwable = when {
+        message?.contains("room not found", ignoreCase = true) == true -> Exception("Oda bulunamadı")
+        message?.contains("voting already started", ignoreCase = true) == true -> Exception("Oylama başladı, odaya girilemez")
+        message?.contains("room is full", ignoreCase = true) == true -> Exception("Oda dolu")
+        else -> this
     }
 
-    private fun DataSnapshot.toRoom(): Room? {
-        val dto = getValue(RoomDto::class.java) ?: return null
-        return dto.toDomain()
+    private suspend fun fetchRoom(roomId: String): Room? {
+        val room = supabase.from("rooms").select { filter { eq("id", roomId) } }
+            .decodeList<RoomDto>().firstOrNull() ?: return null
+        val participants = supabase.from("participants").select { filter { eq("room_id", roomId) } }
+            .decodeList<ParticipantDto>()
+        val choices = supabase.from("choices").select {
+            filter { eq("room_id", roomId) }
+            order("position", Order.ASCENDING)
+        }.decodeList<ChoiceDto>()
+        return room.toDomain(participants, choices)
     }
 
-    override fun createRoom(hostName: String): Flow<Result<Room>> = callbackFlow {
-        launch {
-            val userId = try {
-                getOrSignInUserId()
-            } catch (e: Exception) {
-                trySend(Result.failure(e))
-                close()
-                return@launch
-            }
+    override fun createRoom(hostName: String): Flow<Result<Room>> = flow {
+        emit(runCatching {
+            val userId = session.userId()
             userPreferencesDataSource.saveUserCredentials(userId, hostName)
-            
-            val host = Participant(id = userId, name = hostName, isReady = true)
-            val maxRetries = 5
-            
-            fun tryCreateRoom(attempt: Int) {
-                if (attempt > maxRetries) {
-                    trySend(Result.failure(Exception("Oda oluşturulamadı: benzersiz ID bulunamadı")))
-                    close()
-                    return
-                }
-                
-                val roomId = (100000..999999).random().toString()
-                val roomRef = roomsRef.child(roomId)
-                
-                roomRef.addListenerForSingleValueEvent(object : ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        if (snapshot.exists()) {
-                            // Room ID already exists, retry with a new ID
-                            tryCreateRoom(attempt + 1)
-                        } else {
-                            val newRoom = Room(
-                                id = roomId,
-                                hostId = userId,
-                                state = RoomState.WAITING,
-                                createdAt = System.currentTimeMillis(),
-                                participants = mapOf(userId to host)
-                            )
-                            
-                            roomRef.setValue(newRoom)
-                                .addOnSuccessListener {
-                                    roomRef.child("participants").child(userId).onDisconnect().removeValue()
-                                    trySend(Result.success(newRoom))
-                                    close()
-                                }
-                                .addOnFailureListener { e ->
-                                    trySend(Result.failure(e))
-                                    close()
-                                }
-                        }
-                    }
-                    
-                    override fun onCancelled(error: DatabaseError) {
-                        trySend(Result.failure(error.toException()))
-                        close()
-                    }
-                })
-            }
-            
-            tryCreateRoom(1)
-        }
-        awaitClose { }
+            val code = rpc("create_room", buildJsonObject { put("p_name", hostName) }).decodeAs<String>()
+            fetchRoom(code) ?: throw Exception("Oda okunamadı")
+        }.recoverCatching { throw it.friendly() })
     }
 
-    override fun joinRoom(roomId: String, participantName: String): Flow<Result<Room>> = callbackFlow {
-        launch {
-            val userId = try {
-                getOrSignInUserId()
-            } catch (e: Exception) {
-                trySend(Result.failure(e))
-                close()
-                return@launch
-            }
+    override fun joinRoom(roomId: String, participantName: String): Flow<Result<Room>> = flow {
+        emit(runCatching {
+            val userId = session.userId()
             userPreferencesDataSource.saveUserCredentials(userId, participantName)
-            
-            val roomRef = roomsRef.child(roomId)
-            
-            // First check if the room exists
-            roomRef.addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    if (!snapshot.exists()) {
-                        trySend(Result.failure(Exception("Oda bulunamadı")))
-                        close()
-                        return
-                    }
-                    
-                    // Write ONLY the participant node to avoid race conditions
-                    val newParticipant = Participant(id = userId, name = participantName, isReady = false)
-                    roomRef.child("participants").child(userId).setValue(newParticipant)
-                        .addOnSuccessListener {
-                            // Register onDisconnect on the specific participant path
-                            roomRef.child("participants").child(userId).onDisconnect().removeValue()
-                            
-                            // Read the full room once more to return the result
-                            roomRef.addListenerForSingleValueEvent(object : ValueEventListener {
-                                override fun onDataChange(updatedSnapshot: DataSnapshot) {
-                                    val updatedRoom = updatedSnapshot.toRoom()
-                                    if (updatedRoom != null) {
-                                        trySend(Result.success(updatedRoom))
-                                    } else {
-                                        trySend(Result.failure(Exception("Oda okunamadı")))
-                                    }
-                                    close()
-                                }
-                                
-                                override fun onCancelled(error: DatabaseError) {
-                                    trySend(Result.failure(error.toException()))
-                                    close()
-                                }
-                            })
-                        }
-                        .addOnFailureListener { e ->
-                            trySend(Result.failure(e))
-                            close()
-                        }
-                }
-                
-                override fun onCancelled(error: DatabaseError) {
-                    trySend(Result.failure(error.toException()))
-                    close()
+            rpc("join_room", buildJsonObject {
+                put("p_room", roomId)
+                put("p_name", participantName)
+            })
+            fetchRoom(roomId) ?: throw Exception("Oda okunamadı")
+        }.recoverCatching { throw it.friendly() })
+    }
+
+    /**
+     * Emits the full room whenever anything in it changes. Realtime events are only a trigger;
+     * the snapshot is always re-read, plus a slow safety refresh in case an event is missed.
+     */
+    override fun observeRoom(roomId: String): Flow<Room?> = channelFlow {
+        session.userId() // make sure the realtime socket is authenticated before subscribing
+        val channel = supabase.channel("room-$roomId-${System.nanoTime()}")
+        val roomChanges = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "rooms"
+            filter("id", io.github.jan.supabase.postgrest.query.filter.FilterOperator.EQ, roomId)
+        }
+        val participantChanges = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "participants"
+            filter("room_id", io.github.jan.supabase.postgrest.query.filter.FilterOperator.EQ, roomId)
+        }
+        val choiceChanges = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "choices"
+            filter("room_id", io.github.jan.supabase.postgrest.query.filter.FilterOperator.EQ, roomId)
+        }
+
+        val refresh = Channel<Unit>(Channel.CONFLATED)
+        launch { roomChanges.collect { refresh.trySend(Unit) } }
+        launch { participantChanges.collect { refresh.trySend(Unit) } }
+        launch { choiceChanges.collect { refresh.trySend(Unit) } }
+        launch { while (true) { delay(15_000); refresh.trySend(Unit) } }
+        launch {
+            for (ignored in refresh) {
+                runCatching { fetchRoom(roomId) }.onSuccess { send(it) }
+            }
+        }
+
+        try {
+            runCatching { channel.subscribe(blockUntilSubscribed = true) }
+            refresh.trySend(Unit)
+            awaitCancellation()
+        } finally {
+            withContext(NonCancellable) { runCatching { supabase.realtime.removeChannel(channel) } }
+        }
+    }.distinctUntilChanged()
+
+    override suspend fun setParticipantReady(roomId: String, userId: String, isReady: Boolean): Result<Unit> =
+        runCatching {
+            rpc("set_ready", buildJsonObject {
+                put("p_room", roomId)
+                put("p_ready", isReady)
+            })
+            Unit
+        }
+
+    override suspend fun startVotingWithChoices(roomId: String, choices: List<Choice>): Result<Unit> =
+        runCatching {
+            val payload = JsonArray(choices.map { c ->
+                buildJsonObject {
+                    put("id", c.id)
+                    put("name", c.name)
+                    put("details", c.details)
+                    put("image_url", c.imageUrl?.let { JsonPrimitive(it) } ?: JsonNull)
+                    put("latitude", c.latitude?.let { JsonPrimitive(it) } ?: JsonNull)
+                    put("longitude", c.longitude?.let { JsonPrimitive(it) } ?: JsonNull)
+                    put("category", c.category)
                 }
             })
-        }
-        awaitClose { }
-    }
-
-    override fun observeRoom(roomId: String): Flow<Room?> = callbackFlow {
-        val roomRef = roomsRef.child(roomId)
-        
-        val listener = object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                val room = snapshot.toRoom()
-                trySend(room)
-            }
-            
-            override fun onCancelled(error: DatabaseError) {
-                // Ignore
-            }
-        }
-        
-        roomRef.addValueEventListener(listener)
-        
-        awaitClose {
-            roomRef.removeEventListener(listener)
-        }
-    }
-
-    override suspend fun setParticipantReady(
-        roomId: String,
-        userId: String,
-        isReady: Boolean
-    ): Result<Unit> = suspendCancellableCoroutine { continuation ->
-        val participantRef = roomsRef.child(roomId).child("participants").child(userId)
-        
-        val updates = mapOf(
-            "isReady" to isReady,
-            "ready" to isReady
-        )
-        
-        participantRef.updateChildren(updates)
-            .addOnSuccessListener {
-                if (continuation.isActive) continuation.resume(Result.success(Unit))
-            }
-            .addOnFailureListener { e ->
-                if (continuation.isActive) continuation.resume(Result.failure(e))
-            }
-    }
-
-    override suspend fun startVotingWithChoices(roomId: String, choices: List<Choice>): Result<Unit> = suspendCancellableCoroutine { continuation ->
-        val roomRef = roomsRef.child(roomId)
-        
-        val choicesMap = choices.associateBy { it.id }
-        val updates = mapOf(
-            "choices" to choicesMap,
-            "state" to RoomState.VOTING.name
-        )
-        
-        roomRef.updateChildren(updates)
-            .addOnSuccessListener {
-                if (continuation.isActive) continuation.resume(Result.success(Unit))
-            }
-            .addOnFailureListener { e ->
-                if (continuation.isActive) continuation.resume(Result.failure(e))
-            }
-    }
-
-    override suspend fun submitVotes(roomId: String, likedChoiceIds: List<String>): Result<Unit> {
-        val userId = try {
-            getOrSignInUserId()
-        } catch (e: Exception) {
-            return Result.failure(e)
-        }
-        roomsRef.child(roomId).child("participants").child(userId).child("hasVoted").setValue(true)
-        
-        if (likedChoiceIds.isEmpty()) {
-            return Result.success(Unit)
-        }
-        
-        return suspendCancellableCoroutine { continuation ->
-            val choicesRef = roomsRef.child(roomId).child("choices")
-            
-            var completedCount = 0
-            var hasFailed = false
-            
-            likedChoiceIds.forEach { choiceId ->
-            choicesRef.child(choiceId).child("voteCount").runTransaction(object : Transaction.Handler {
-                override fun doTransaction(currentData: MutableData): Transaction.Result {
-                    val currentVotes = currentData.getValue(Int::class.java) ?: 0
-                    currentData.value = currentVotes + 1
-                    return Transaction.success(currentData)
-                }
-                
-                override fun onComplete(
-                    error: DatabaseError?,
-                    committed: Boolean,
-                    currentData: DataSnapshot?
-                ) {
-                    completedCount++
-                    if (error != null) {
-                        hasFailed = true
-                    }
-                    
-                    if (completedCount == likedChoiceIds.size) {
-                        if (hasFailed) {
-                            if (continuation.isActive) continuation.resume(Result.failure(Exception("Bazı oylar kaydedilemedi")))
-                        } else {
-                            if (continuation.isActive) continuation.resume(Result.success(Unit))
-                        }
-                    }
-                }
+            rpc("start_voting", buildJsonObject {
+                put("p_room", roomId)
+                put("p_choices", payload)
             })
+            Unit
         }
-    }
-}
 
-    override suspend fun endVotingAndSetWinner(roomId: String, winnerChoiceId: String): Result<Unit> = suspendCancellableCoroutine { continuation ->
-        val roomRef = roomsRef.child(roomId)
-        
-        val updates = mapOf(
-            "winnerChoiceId" to winnerChoiceId,
-            "state" to RoomState.RESULT.name
-        )
-        
-        roomRef.updateChildren(updates)
-            .addOnSuccessListener {
-                if (continuation.isActive) continuation.resume(Result.success(Unit))
-            }
-            .addOnFailureListener { e ->
-                if (continuation.isActive) continuation.resume(Result.failure(e))
-            }
-    }
+    override suspend fun submitVotes(roomId: String, likedChoiceIds: List<String>): Result<Unit> =
+        runCatching {
+            rpc("submit_votes", buildJsonObject {
+                put("p_room", roomId)
+                put("p_choice_ids", JsonArray(likedChoiceIds.map { JsonPrimitive(it) }))
+            })
+            Unit
+        }
 
-    override suspend fun deleteRoom(roomId: String): Result<Unit> = suspendCancellableCoroutine { continuation ->
-        roomsRef.child(roomId).removeValue()
-            .addOnSuccessListener {
-                if (continuation.isActive) continuation.resume(Result.success(Unit))
-            }
-            .addOnFailureListener { e ->
-                if (continuation.isActive) continuation.resume(Result.failure(e))
-            }
+    override suspend fun endVotingAndSetWinner(roomId: String, winnerChoiceId: String?): Result<String> =
+        runCatching {
+            rpc("end_voting", buildJsonObject {
+                put("p_room", roomId)
+                put("p_winner", winnerChoiceId?.let { JsonPrimitive(it) } ?: JsonNull)
+            }).decodeAs<String>()
+        }
+
+    override suspend fun leaveRoom(roomId: String): Result<Unit> = runCatching {
+        rpc("leave_room", buildJsonObject { put("p_room", roomId) })
+        Unit
     }
 
-    override fun getSavedUserId(): Flow<String?> {
-        return userPreferencesDataSource.userIdFlow
+    override suspend fun deleteRoom(roomId: String): Result<Unit> = runCatching {
+        rpc("delete_room", buildJsonObject { put("p_room", roomId) })
+        Unit
     }
 
-    override fun getSavedUsername(): Flow<String?> {
-        return userPreferencesDataSource.usernameFlow
-    }
-
+    // Local user credentials (DataStore)
+    // The signed-in Supabase user is the single source of truth for "who am I".
+    override fun getSavedUserId(): Flow<String?> = supabase.auth.sessionStatus
+        .map { (it as? SessionStatus.Authenticated)?.session?.user?.id }
+        .distinctUntilChanged()
+    override fun getSavedUsername(): Flow<String?> = userPreferencesDataSource.usernameFlow
     override suspend fun saveUserCredentials(userId: String, username: String) {
         userPreferencesDataSource.saveUserCredentials(userId, username)
     }

@@ -296,6 +296,14 @@ fun VotingScreen(
                                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
                                 )
                             )
+                            if (isHost) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                TextButton(onClick = {
+                                    sharedViewModel.finishVotingNow(roomId) { onNavigateToResult(roomId) }
+                                }) {
+                                    Text("Sonuçları şimdi göster")
+                                }
+                            }
                         }
                     }
                 }

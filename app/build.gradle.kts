@@ -7,15 +7,12 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.google.services)
 }
 
 android {
     namespace = "com.napsak.app"
     compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
+        version = release(37)
     }
 
     val localProperties = Properties()
@@ -23,7 +20,8 @@ android {
     if (localPropertiesFile.exists()) {
         localProperties.load(localPropertiesFile.inputStream())
     }
-    val imgbbApiKey = localProperties.getProperty("imgbb.api.key") ?: ""
+    val supabaseUrl = localProperties.getProperty("supabase.url") ?: System.getenv("SUPABASE_URL") ?: ""
+    val supabaseAnonKey = localProperties.getProperty("supabase.anon.key") ?: System.getenv("SUPABASE_ANON_KEY") ?: ""
 
     defaultConfig {
         applicationId = "com.napsak.app"
@@ -34,7 +32,8 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
-        buildConfigField("String", "IMGBB_API_KEY", "\"$imgbbApiKey\"")
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
     }
 
     buildTypes {
@@ -83,11 +82,13 @@ dependencies {
     // Coil (Image Loading)
     implementation(libs.coil.compose)
 
-    // Firebase
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.database)
-    implementation(libs.firebase.auth)
-    implementation(libs.firebase.storage)
+    // Supabase
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.postgrest)
+    implementation(libs.supabase.auth)
+    implementation(libs.supabase.realtime)
+    implementation(libs.supabase.storage)
+    implementation(libs.ktor.client.okhttp)
 
     // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)

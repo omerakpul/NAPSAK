@@ -11,7 +11,9 @@ interface RoomRepository {
     suspend fun setParticipantReady(roomId: String, userId: String, isReady: Boolean): Result<Unit>
     suspend fun startVotingWithChoices(roomId: String, choices: List<Choice>): Result<Unit>
     suspend fun submitVotes(roomId: String, likedChoiceIds: List<String>): Result<Unit>
-    suspend fun endVotingAndSetWinner(roomId: String, winnerChoiceId: String): Result<Unit>
+    /** Ends voting. [winnerChoiceId] is the host's raffle pick (null = let the server pick). Returns the winner id the server stored. */
+    suspend fun endVotingAndSetWinner(roomId: String, winnerChoiceId: String?): Result<String>
+    suspend fun leaveRoom(roomId: String): Result<Unit>
     suspend fun deleteRoom(roomId: String): Result<Unit>
     
     // Local User Credentials (DataStore)
