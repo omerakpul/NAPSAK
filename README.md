@@ -13,6 +13,7 @@ The project has a native **Android client** (Jetpack Compose, Clean Architecture
 * **Server-enforced rules:** all writes go through `SECURITY DEFINER` Postgres functions. One vote per player, secret ballots, only the host can start/end voting, and the host can only pick a winner among the top-voted options. Clients cannot write tables directly (Row Level Security has no write policies).
 * **Anonymous sign-in:** no accounts; each device gets an anonymous Supabase user.
 * **Image pipeline:** images are validated (10 MB source limit), downscaled to ≤1024 px and JPEG-compressed on device, then uploaded to a public Supabase Storage bucket (`choice-images`, 2 MB cap, owner-only write).
+* **Image retention:** uploaded images are intentionally not auto-deleted, because users' saved lists (stored on their device) keep referencing the URLs. Each file is ≤2 MB after compression, and an uploader can delete their own objects.
 * **Leaving & cleanup:** leaving the lobby removes you from the room (the host leaving closes it); abandoned rooms are deleted hourly by `pg_cron`.
 * **Local lists:** preset and user-created option lists are stored on device with Preferences DataStore.
 
