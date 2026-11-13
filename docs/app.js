@@ -97,9 +97,7 @@ initAuth();
 
 // Screen Navigation Utility
 function showScreen(screenToShow) {
-    [screenJoin, screenLobby, screenVoting, screenResult].forEach(screen => {
-        screen.classList.remove("active");
-    });
+    document.querySelectorAll(".screen").forEach(screen => screen.classList.remove("active"));
     screenToShow.classList.add("active");
 }
 
@@ -229,6 +227,7 @@ async function refreshRoom() {
 
 // Observe Room updates in Realtime (events only trigger a re-read; a slow poll covers missed events)
 function observeRoom() {
+    try { localStorage.setItem("napsak_room", roomId); } catch (e) { /* storage unavailable */ }
     roomChannel = sb.channel("room-" + roomId);
     [["rooms", "id"], ["participants", "room_id"], ["choices", "room_id"], ["suggestions", "room_id"]].forEach(([table, col]) => {
         roomChannel.on("postgres_changes",
@@ -244,6 +243,7 @@ function observeRoom() {
 // Leave the room when the page is closed so an absent player never blocks the vote
 function leaveRoomOnExit() {
     if (!roomId || !roomData || roomData.state === "RESULT") return;
+    if (typeof isHost === "function" && isHost()) return; // a host reload must not close the room
     sb.auth.getSession().then(({ data: { session } }) => {
         if (!session) return;
         fetch(SUPABASE_URL + "/rest/v1/rpc/leave_room", {
@@ -259,8 +259,9 @@ window.addEventListener("pageshow", e => { if (e.persisted && roomId) window.loc
 function onRoomData(data) {
     roomData = data;
     if (!roomData) {
+        try { localStorage.removeItem("napsak_room"); } catch (e) { /* ignore */ }
         alert("Oda kapatıldı veya bulunamadı.");
-        window.location.reload();
+        window.location.href = window.location.pathname;
         return;
     }
 
@@ -277,8 +278,10 @@ function onRoomData(data) {
         const allVoted = total > 0 && participants.every(p => p.hasVoted);
         if (allVoted && votesSubmitted && roomData.state === "VOTING") {
             startWebResultCountdown();
+            if (typeof hostFinishVoting === "function") hostFinishVoting();
         }
     }
+    if (typeof renderWaiting === "function") renderWaiting();
 
     // Check state transitions
     handleRoomStateChange();
@@ -362,9 +365,14 @@ function handleRoomStateChange() {
     const state = roomData.state || "WAITING";
 
     if (state === "WAITING") {
+        if (typeof hostSetupOpen !== "undefined" && hostSetupOpen && isHost()) {
+            renderSetup();
+            return;
+        }
         showScreen(screenLobby);
         updateLobbyUI();
         renderMySuggestions();
+        if (typeof renderHostLobby === "function") renderHostLobby();
     } else if (state === "VOTING") {
         if (!screenVoting.classList.contains("active")) {
             showScreen(screenVoting);
@@ -876,10 +884,22 @@ function showVotingFinished() {
     }
 }
 
-function submitVotes() {
-    // One RPC: records this player's likes and marks them as voted atomically (server enforces one vote per player)
+function submitVotes(attempt = 1) {
+    // One RPC: records this player's likes and marks them as voted atomically (server enforces one vote per player).
+    // Network failures are retried with a growing delay; rule violations are not.
+    const status = document.getElementById("vote-send-status");
+    if (status && attempt > 1) status.textContent = "Oyların gönderiliyor, bağlantı bekleniyor…";
     sb.rpc("submit_votes", { p_room: roomId, p_choice_ids: likedChoiceIds }).then(({ error }) => {
-        if (error) console.warn("submit_votes failed:", error.message);
+        if (!error) { if (status) status.textContent = ""; return; }
+        const msg = (error.message || "").toLowerCase();
+        if (msg.includes("already voted")) { if (status) status.textContent = ""; return; }
+        const permanent = ["not in voting", "not a participant", "invalid choice", "pick exactly", "duplicate"].some(k => msg.includes(k));
+        if (permanent || attempt >= 30) {
+            if (status) status.textContent = "Oylar gönderilemedi.";
+            console.warn("submit_votes failed:", error.message);
+            return;
+        }
+        setTimeout(() => submitVotes(attempt + 1), Math.min(2000 * attempt, 10000));
     });
 }
 
@@ -1086,7 +1106,11 @@ function playConfetti() {
 }
 
 // Back to Home
-btnReset.addEventListener("click", () => {
+btnReset.addEventListener("click", async () => {
+    if (typeof isHost === "function" && isHost()) {
+        try { await sb.rpc("delete_room", { p_room: roomId }); } catch (e) { /* the room expires on its own */ }
+    }
+    try { localStorage.removeItem("napsak_room"); } catch (e) { /* ignore */ }
     window.location.href = window.location.pathname; // Reload without query params
 });
 
@@ -1112,3 +1136,16 @@ document.getElementById("btn-share").addEventListener("click", async () => {
         alert("Sonuç panoya kopyalandı!");
     }
 });
+
+
+// ---- Connection status ----
+const netBanner = document.getElementById("net-banner");
+function updateNetBanner() {
+    netBanner.classList.toggle("hidden", navigator.onLine);
+}
+window.addEventListener("offline", updateNetBanner);
+window.addEventListener("online", () => {
+    updateNetBanner();
+    if (roomId) refreshRoom(); // catch up on anything missed while offline
+});
+updateNetBanner();

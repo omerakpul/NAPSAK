@@ -14,15 +14,21 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="style.css?v=1.1.0">
+    <link rel="stylesheet" href="style.css?v=1.2.0">
     
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 
     <!-- Canvas Confetti for Celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
+    <!-- Connection status (announced to screen readers) -->
+    <div id="net-banner" class="net-banner hidden" role="status" aria-live="polite">
+        <i class="fa-solid fa-wifi" aria-hidden="true"></i> Bağlantı yok. Yeniden bağlanınca devam edecek…
+    </div>
+
     <div class="app-container">
         <!-- Background Gradients -->
         <div class="bg-glow bg-glow-1"></div>
@@ -49,6 +55,9 @@
                 </div>
                 
                 <button id="btn-join" class="btn-primary">Katıl <i class="fa-solid fa-right-to-bracket"></i></button>
+
+                <div class="or-divider"><span>veya</span></div>
+                <button id="btn-create-room" class="btn-secondary" disabled>Yeni Oda Oluştur <i class="fa-solid fa-plus"></i></button>
             </div>
         </section>
 
@@ -69,6 +78,21 @@
                 </div>
             </div>
             
+            <!-- Host-only tools: share the room and open the option setup -->
+            <div id="host-lobby-tools" class="card glass host-tools hidden">
+                <h3>Odayı paylaş</h3>
+                <div class="share-row">
+                    <div id="host-qr" class="host-qr" role="img" aria-label="Odaya katılmak için QR kodu"></div>
+                    <div class="share-info">
+                        <p id="host-link" class="host-link"></p>
+                        <button id="btn-copy-link" class="btn-secondary" type="button">Bağlantıyı kopyala <i class="fa-solid fa-copy"></i></button>
+                    </div>
+                </div>
+                <p id="host-suggestion-count" class="suggest-hint"></p>
+                <button id="btn-host-setup" class="btn-primary" disabled>Oylamayı Başlat <i class="fa-solid fa-play"></i></button>
+                <p id="host-ready-hint" class="suggest-hint">Oylamayı başlatmak için tüm katılımcıların hazır olması bekleniyor.</p>
+            </div>
+
             <div id="suggest-card" class="card glass suggest-card">
                 <h3>Bir seçenek öner</h3>
                 <p class="suggest-hint">Önerin oda sahibine iletilir (en fazla 5).</p>
@@ -85,15 +109,53 @@
             </div>
         </section>
 
+        <!-- Host: build the option list and pick the vote mode -->
+        <section id="screen-setup" class="screen">
+            <div class="header">
+                <span class="badge">Seçenekleri Oluştur</span>
+                <h1>Neyi oylayacağız?</h1>
+            </div>
+
+            <div id="setup-suggestions" class="card glass hidden">
+                <h3>Arkadaşlarından öneriler</h3>
+                <div id="setup-suggestions-list" class="setup-list"></div>
+            </div>
+
+            <div class="card glass">
+                <h3>Şablon ekle</h3>
+                <div id="setup-templates" class="chip-row"></div>
+                <h3 class="setup-sub">Toplu ekle</h3>
+                <p class="suggest-hint">Her satıra bir seçenek yaz. İstersen <b>Ad - açıklama</b> biçimini kullan.</p>
+                <textarea id="setup-bulk" class="setup-textarea" rows="4" placeholder="Pizza&#10;Burger - gurme hamburger&#10;Sushi"></textarea>
+                <button id="btn-setup-add" class="btn-secondary" type="button">Satırları Ekle <i class="fa-solid fa-plus"></i></button>
+            </div>
+
+            <div class="card glass">
+                <h3>Seçenekler (<span id="setup-count">0</span>)</h3>
+                <div id="setup-list" class="setup-list"></div>
+            </div>
+
+            <div class="card glass">
+                <h3>Oylama şekli</h3>
+                <div id="setup-modes" class="chip-row" role="radiogroup" aria-label="Oylama şekli"></div>
+                <p id="setup-mode-hint" class="suggest-hint"></p>
+            </div>
+
+            <div class="action-footer">
+                <button id="btn-setup-start" class="btn-primary" disabled>Oylamaya Geç <i class="fa-solid fa-arrow-right"></i></button>
+                <button id="btn-setup-back" class="btn-text" type="button">Lobiye dön</button>
+            </div>
+        </section>
+
         <!-- Screen 3: Voting (Tinder Swipe) -->
         <section id="screen-voting" class="screen">
             <div class="header">
                 <div class="voting-header-row">
                     <span class="badge">Oylama Başladı</span>
-                    <span id="voting-timer" class="voting-timer-badge">Kalan Süre: 0s</span>
+                    <span id="voting-timer" class="voting-timer-badge" role="timer" aria-live="off">Kalan Süre: 0s</span>
                 </div>
                 <div class="progress-bar-container">
-                    <div id="voting-progress" class="progress-text">0 / 0</div>
+                    <div id="voting-progress" class="progress-text" aria-live="polite">0 / 0</div>
                     <div class="progress-track">
                         <div id="progress-fill" class="progress-fill" style="width: 0%;"></div>
                     </div>
@@ -119,14 +181,23 @@
                     <h2>Oylamayı Bitirdin!</h2>
                     <p id="voting-finished-text">Oyların kaydedildi. Diğer katılımcıların oylamayı tamamlaması bekleniyor...</p>
                     <p id="web-finished-count" class="finished-count-text">Tamamlanan: 0/0</p>
+                    <p id="waiting-names" class="waiting-names" aria-live="polite"></p>
+                    <p id="vote-send-status" class="vote-send-status" role="status" aria-live="polite"></p>
+                    <div id="host-wait-prompt" class="host-wait-prompt hidden">
+                        <p>Bazı oyuncular hâlâ oy vermedi. Bekleyelim mi?</p>
+                        <div class="prompt-buttons">
+                            <button id="btn-wait-more" class="btn-secondary" type="button">Bekle</button>
+                            <button id="btn-finish-now" class="btn-primary" type="button">Sonuçları göster</button>
+                        </div>
+                    </div>
                     <div class="loader-ring"></div>
                 </div>
             </div>
             
             <!-- Action buttons underneath cards -->
             <div id="voting-actions" class="voting-actions">
-                <button id="btn-dislike" class="action-btn btn-dislike" title="Pas Geç"><i class="fa-solid fa-xmark"></i></button>
-                <button id="btn-like" class="action-btn btn-like" title="Beğen"><i class="fa-solid fa-heart"></i></button>
+                <button id="btn-dislike" class="action-btn btn-dislike" title="Pas Geç" aria-label="Pas geç"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                <button id="btn-like" class="action-btn btn-like" title="Beğen" aria-label="Beğen"><i class="fa-solid fa-heart" aria-hidden="true"></i></button>
             </div>
         </section>
 
@@ -159,6 +230,7 @@
     </div>
     
     <!-- Application Logic -->
-    <script src="app.js?v=2.1.0"></script>
+    <script src="app.js?v=2.2.0"></script>
+    <script src="host.js?v=2.2.0"></script>
 </body>
 </html>
