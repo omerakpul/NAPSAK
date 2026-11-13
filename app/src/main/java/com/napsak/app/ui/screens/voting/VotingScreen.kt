@@ -12,6 +12,14 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,6 +62,7 @@ fun VotingScreen(
     val allChoices by sharedViewModel.choices.collectAsState()
     val choices = remember(allChoices) { allChoices.toList() }
     val voteMode by sharedViewModel.voteMode.collectAsState()
+    val votePending by sharedViewModel.votePending.collectAsState()
 
     // Track liked choices
     val likedChoices = remember { mutableStateListOf<Choice>() }
@@ -97,6 +106,18 @@ fun VotingScreen(
     val participantsList = currentRoom?.participants?.values?.toList() ?: emptyList()
     val allVoted = participantsList.isNotEmpty() && participantsList.all { it.hasVoted }
     val isHost = currentRoom?.hostId == sharedViewModel.currentUserId.value
+
+    // How long everybody has been waiting for the slowest voter (drives the host's "wait or finish?" prompt)
+    var waitedSeconds by remember { mutableIntStateOf(0) }
+    var promptAtSeconds by remember { mutableIntStateOf(WAIT_PROMPT_SECONDS) }
+    LaunchedEffect(votesSubmitted, allVoted) {
+        waitedSeconds = 0
+        promptAtSeconds = WAIT_PROMPT_SECONDS
+        while (votesSubmitted && !allVoted) {
+            kotlinx.coroutines.delay(1000L)
+            waitedSeconds++
+        }
+    }
 
     // Auto-transition countdown when all participants have voted
     LaunchedEffect(allVoted, votesSubmitted) {
@@ -284,7 +305,7 @@ fun VotingScreen(
                                 text = "Sonuçlar açıklanıyor...",
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = CoralPrimary
+                                    color = MaterialTheme.colorScheme.primary
                                 ),
                                 textAlign = TextAlign.Center
                             )
@@ -294,13 +315,13 @@ fun VotingScreen(
                                     text = "$countdownTime",
                                     fontSize = 56.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = CoralPrimary,
+                                    color = MaterialTheme.colorScheme.primary,
                                     textAlign = TextAlign.Center
                                 )
                             } else {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(40.dp),
-                                    color = CoralPrimary,
+                                    color = MaterialTheme.colorScheme.primary,
                                     strokeWidth = 3.dp
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -308,7 +329,7 @@ fun VotingScreen(
                                     text = "Hesaplanıyor...",
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = CoralPrimary
+                                        color = MaterialTheme.colorScheme.primary
                                     ),
                                     textAlign = TextAlign.Center
                                 )
@@ -316,7 +337,7 @@ fun VotingScreen(
                         } else {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(36.dp),
-                                color = CoralPrimary,
+                                color = MaterialTheme.colorScheme.primary,
                                 strokeWidth = 3.dp
                             )
                             Spacer(modifier = Modifier.height(16.dp))
@@ -334,12 +355,44 @@ fun VotingScreen(
                                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
                                 )
                             )
+                            val waitingNames = participantsList.filter { !it.hasVoted }.map { it.name }
+                            if (waitingNames.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Bekleniyor: ${waitingNames.joinToString(", ")}",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                                    ),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                            if (votePending) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Oyların gönderiliyor, bağlantı bekleniyor…",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = MaterialTheme.colorScheme.error,
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                             if (isHost) {
                                 Spacer(modifier = Modifier.height(16.dp))
-                                TextButton(onClick = {
-                                    sharedViewModel.finishVotingNow(roomId) { onNavigateToResult(roomId) }
-                                }) {
-                                    Text("Sonuçları şimdi göster")
+                                if (waitedSeconds >= promptAtSeconds && waitingNames.isNotEmpty()) {
+                                    HostWaitPrompt(
+                                        waitingNames = waitingNames,
+                                        onWait = { promptAtSeconds = waitedSeconds + WAIT_PROMPT_SECONDS },
+                                        onFinish = {
+                                            sharedViewModel.finishVotingNow(roomId) { onNavigateToResult(roomId) }
+                                        }
+                                    )
+                                } else {
+                                    TextButton(onClick = {
+                                        sharedViewModel.finishVotingNow(roomId) { onNavigateToResult(roomId) }
+                                    }) {
+                                        Text("Sonuçları şimdi göster")
+                                    }
                                 }
                             }
                         }
@@ -378,7 +431,7 @@ fun VotingScreen(
                     IconButton(
                         onClick = undoLastSwipe,
                         enabled = swipeHistory.isNotEmpty() && currentIndex in 1 until choices.size,
-                        modifier = Modifier.size(44.dp)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Undo,
@@ -419,7 +472,7 @@ fun VotingScreen(
                         text = "Eşitlik Çözülüyor...",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = CoralPrimary,
+                            color = MaterialTheme.colorScheme.primary,
                             letterSpacing = 1.sp
                         ),
                         modifier = Modifier.fillMaxWidth(),
@@ -480,7 +533,7 @@ fun VotingScreen(
                         Spacer(modifier = Modifier.height(20.dp))
                         
                         CircularProgressIndicator(
-                            color = CoralPrimary,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(32.dp),
                             strokeWidth = 3.dp
                         )
@@ -535,6 +588,17 @@ fun SwipeableCard(
         Card(
             modifier = Modifier
                 .fillMaxSize()
+                .semantics(mergeDescendants = true) {
+                    contentDescription = buildString {
+                        append(choice.name)
+                        if (choice.details.isNotBlank()) append(". ").append(choice.details)
+                    }
+                    // the swipe gesture has no TalkBack equivalent, so offer it as actions
+                    customActions = listOf(
+                        CustomAccessibilityAction("Beğen") { onSwipeRight(); true },
+                        CustomAccessibilityAction("Pas geç") { onSwipeLeft(); true }
+                    )
+                }
                 .offset { IntOffset(offsetX.value.roundToInt(), 0) }
                 .graphicsLayer {
                     rotationZ = rotation
@@ -608,7 +672,7 @@ fun SwipeableCard(
                                     text = choice.category.uppercase(),
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = CoralPrimary,
+                                        color = MaterialTheme.colorScheme.primary,
                                         letterSpacing = 0.5.sp
                                     )
                                 )
@@ -657,7 +721,7 @@ fun SwipeableCard(
                                     text = choice.category.uppercase(),
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = CoralPrimary,
+                                        color = MaterialTheme.colorScheme.primary,
                                         letterSpacing = 0.5.sp
                                     )
                                 )
@@ -691,3 +755,6 @@ fun SwipeableCard(
         }
     }
 }
+
+/** Seconds after the host finished voting before they are asked whether to keep waiting. */
+private const val WAIT_PROMPT_SECONDS = 45

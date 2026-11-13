@@ -1,5 +1,7 @@
 package com.napsak.app.ui.screens.lobby
 
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -83,7 +85,7 @@ fun LobbyScreen(
     val room = roomState
     if (room == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = CoralPrimary)
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
         return
     }
@@ -104,10 +106,23 @@ fun LobbyScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Participant List
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
             Spacer(modifier = Modifier.height(24.dp))
 
             // Lobby Header
             Text(
+                modifier = Modifier.semantics { heading() },
                 text = "BEKLEME LOBİSİ",
                 style = MaterialTheme.typography.titleSmall.copy(
                     fontWeight = FontWeight.Bold,
@@ -239,13 +254,9 @@ fun LobbyScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Participant List
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+                    }
+                }
+
                 items(participants) { participant ->
                     val isParticipantHost = room.hostId == participant.id
                     val displayName = if (isParticipantHost) "${participant.name} (Host)" else participant.name

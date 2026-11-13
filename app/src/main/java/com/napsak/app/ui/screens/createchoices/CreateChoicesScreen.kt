@@ -1,5 +1,7 @@
 package com.napsak.app.ui.screens.createchoices
 
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -185,7 +187,7 @@ fun CreateChoicesScreen(
                     color = MaterialTheme.colorScheme.primary,
                     letterSpacing = 2.sp
                 ),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().semantics { heading() },
                 textAlign = TextAlign.Center
             )
 
@@ -529,7 +531,7 @@ fun CreateChoicesScreen(
                     onClick = { showSaveDialog = true },
                     enabled = uiState.choices.isNotEmpty(),
                     colors = ButtonDefaults.textButtonColors(
-                        contentColor = CoralPrimary,
+                        contentColor = MaterialTheme.colorScheme.primary,
                         disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     )
                 ) {
@@ -679,7 +681,7 @@ fun CreateChoicesScreen(
                             if (isUploadingSavedListImage) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(16.dp),
-                                    color = CoralPrimary,
+                                    color = MaterialTheme.colorScheme.primary,
                                     strokeWidth = 2.dp
                                 )
                             } else if (savedListImageUrl.isNotBlank()) {
@@ -894,7 +896,7 @@ private fun ChoiceListItem(
             // Photo thumbnail or category emoji placeholder (Clickable to upload photo)
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(48.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .background(
                         if (hasImage) MaterialTheme.colorScheme.surfaceVariant
@@ -906,7 +908,7 @@ private fun ChoiceListItem(
                 if (isUploadingImage) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(18.dp),
-                        color = CoralPrimary,
+                        color = MaterialTheme.colorScheme.primary,
                         strokeWidth = 2.dp
                     )
                 } else if (hasImage) {
@@ -978,7 +980,7 @@ private fun ChoiceListItem(
                 // Edit button
                 Box(
                     modifier = Modifier
-                        .size(34.dp)
+                        .size(48.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(AmberSecondary.copy(alpha = 0.10f))
                         .clickable { onEdit() },
@@ -995,7 +997,7 @@ private fun ChoiceListItem(
                 // Remove button
                 Box(
                     modifier = Modifier
-                        .size(34.dp)
+                        .size(48.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(Color(0xFFE57373).copy(alpha = 0.10f))
                         .clickable { onRemove() },

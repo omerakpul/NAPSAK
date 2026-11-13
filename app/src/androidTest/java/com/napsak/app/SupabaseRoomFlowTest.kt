@@ -51,7 +51,7 @@ class SupabaseRoomFlowTest {
 
     private fun repo(client: SupabaseClient): RoomRepositoryImpl {
         val ctx = InstrumentationRegistry.getInstrumentation().targetContext
-        return RoomRepositoryImpl(client, SupabaseSession(client), UserPreferencesDataSource(ctx))
+        return RoomRepositoryImpl(client, SupabaseSession(client), UserPreferencesDataSource(ctx), com.napsak.app.data.remote.ConnectivityObserver(ctx))
     }
 
     private fun step(name: String) = Log.i("E2E", name)

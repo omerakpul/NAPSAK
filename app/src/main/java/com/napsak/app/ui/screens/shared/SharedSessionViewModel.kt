@@ -19,6 +19,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.napsak.app.domain.util.isAlreadyVoted
+import com.napsak.app.domain.util.isPermanentVoteError
+import com.napsak.app.domain.util.retryDelayMs
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -139,15 +144,48 @@ class SharedSessionViewModel @Inject constructor(
         }
     }
 
+    private val _votePending = MutableStateFlow(false)
+
+    /** True while a vote could not be delivered yet (e.g. offline) and is being retried. */
+    val votePending: StateFlow<Boolean> = _votePending.asStateFlow()
+    private var submitJob: Job? = null
+
+    /** Sends the vote and keeps retrying on network failures; rule violations are not retried. */
     fun submitVotes(roomId: String, likedIds: List<String>) {
-        viewModelScope.launch {
-            submitVotesUseCase(roomId, likedIds)
+        if (submitJob?.isActive == true) return
+        submitJob = viewModelScope.launch {
+            var attempt = 0
+            while (true) {
+                attempt++
+                val result = submitVotesUseCase(roomId, likedIds)
+                val error = result.exceptionOrNull()
+                if (result.isSuccess || isAlreadyVoted(error)) {
+                    _votePending.value = false
+                    return@launch
+                }
+                if (isPermanentVoteError(error) || attempt >= 30) {
+                    _votePending.value = false
+                    return@launch
+                }
+                _votePending.value = true
+                delay(retryDelayMs(attempt))
+            }
         }
+    }
+
+    private suspend fun endVotingWithRetry(roomId: String, winnerId: String?): Result<String> {
+        var last: Result<String> = Result.failure(IllegalStateException("not attempted"))
+        for (attempt in 1..8) {
+            last = endVotingUseCase(roomId, winnerId)
+            if (last.isSuccess || isPermanentVoteError(last.exceptionOrNull())) return last
+            delay(retryDelayMs(attempt, capMs = 8_000L))
+        }
+        return last
     }
 
     fun declareWinner(roomId: String, winner: Choice, onComplete: () -> Unit) {
         viewModelScope.launch {
-            val result = endVotingUseCase(roomId, winner.id)
+            val result = endVotingWithRetry(roomId, winner.id)
             _winnerChoice.value = resolveWinner(result.getOrNull(), winner)
             onComplete()
         }
@@ -156,7 +194,7 @@ class SharedSessionViewModel @Inject constructor(
     /** Host-only: close voting now (e.g. someone left or went idle). Server picks among the top-voted. */
     fun finishVotingNow(roomId: String, onComplete: () -> Unit) {
         viewModelScope.launch {
-            val result = endVotingUseCase(roomId, null)
+            val result = endVotingWithRetry(roomId, null)
             val winner = resolveWinner(result.getOrNull(), null)
             if (winner != null) {
                 _winnerChoice.value = winner

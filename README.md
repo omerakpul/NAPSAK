@@ -20,6 +20,10 @@ The project has a native **Android client** (Jetpack Compose, Clean Architecture
 * **Look:** photo-less options get an emoji and accent colour from their name/category; light and dark themes.
 * **Image pipeline:** images are validated (10 MB source limit), downscaled to ≤1024 px and JPEG-compressed on device, then uploaded to a public Supabase Storage bucket (`choice-images`, 2 MB cap, owner-only write).
 * **Image retention:** uploaded images are intentionally not auto-deleted, because users' saved lists (stored on their device) keep referencing the URLs. Each file is ≤2 MB after compression, and an uploader can delete their own objects.
+* **Flaky connections:** an offline banner on every screen, automatic catch-up of the room when the connection returns, and votes that are retried until they get through (rule violations are not retried).
+* **Idle voters:** everyone sees who is still missing; after 45 s the host is asked whether to wait or show the results.
+* **Host from the web too:** the web client can create a room, build the options (templates, pasted lists, players' suggestions), pick the vote mode, start and finish the vote.
+* **Accessibility:** screen-reader labels and swipe actions, headings and live announcements, 48 dp touch targets, readable at 2x font size, light/dark contrast, reduced-motion support on the web.
 * **Leaving & cleanup:** leaving the lobby removes you from the room (the host leaving closes it); rooms live while they are used (3 days of inactivity) and abandoned ones are deleted hourly by `pg_cron`.
 * **Local lists:** preset and user-created option lists are stored on device with Preferences DataStore.
 
@@ -67,7 +71,7 @@ Realtime events are only a *trigger*: on any change the client re-reads the whol
 ./gradlew connectedDebugAndroidTest              # needs an emulator/device and network
 ```
 
-`SupabaseRoomFlowTest` is an end-to-end test against the live Supabase project: two anonymous users create/join a room, go through voting and results observing each other via Realtime, exercise suggestions and the Single/Rank modes, leave and delete the room, and upload an image. `PlaceSearchTest` checks OpenStreetMap search live, `QrCodeTest` / `ShareCardTest` check on-device QR and share-card rendering.
+`SupabaseRoomFlowTest` is an end-to-end test against the live Supabase project: two anonymous users create/join a room, go through voting and results observing each other via Realtime, exercise suggestions and the Single/Rank modes, leave and delete the room, and upload an image. `PlaceSearchTest` checks OpenStreetMap search live, `QrCodeTest` / `ShareCardTest` check on-device QR and share-card rendering, and `AccessibilityTest` checks touch-target size and screen-reader labels of the reusable components (light, dark and 2x font).
 
 ---
 

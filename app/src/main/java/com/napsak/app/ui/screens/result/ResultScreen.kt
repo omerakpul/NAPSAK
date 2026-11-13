@@ -1,5 +1,9 @@
 package com.napsak.app.ui.screens.result
 
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -90,7 +94,7 @@ fun ResultScreen(
     // If no winner is set or raffle hasn't initialized displayedChoice, show fallback
     if (winnerChoice == null || (isTie && displayedChoice == null)) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = CoralPrimary)
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
         return
     }
@@ -126,6 +130,7 @@ fun ResultScreen(
 
                 // Celebratory Header
                 Text(
+                    modifier = Modifier.semantics { heading(); liveRegion = LiveRegionMode.Polite },
                     text = if (isRaffleActive) "🎲 KURA ÇEKİLİYOR... 🎲" else "🎉 KAZANAN SEÇENEK 🎉",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
@@ -196,7 +201,7 @@ fun ResultScreen(
                                             Text(
                                                 text = if (isRaffleActive) "? $unit" else "${winner.voteCount} $unit",
                                                 fontWeight = FontWeight.Bold,
-                                                color = CoralPrimary
+                                                color = MaterialTheme.colorScheme.primary
                                             )
                                         },
                                         shape = RoundedCornerShape(8.dp)
@@ -241,7 +246,7 @@ fun ResultScreen(
                                     Text(
                                         text = if (isRaffleActive) "? $unit" else "${winner.voteCount} $unit",
                                         fontWeight = FontWeight.Bold,
-                                        color = CoralPrimary,
+                                        color = MaterialTheme.colorScheme.primary,
                                         fontSize = 16.sp
                                     )
                                 },

@@ -2,7 +2,8 @@ package com.napsak.app.ui.screens.voting
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -89,7 +90,12 @@ fun SingleChoiceVoting(choices: List<Choice>, onSubmit: (Choice) -> Unit) {
             items(choices, key = { it.id }) { choice ->
                 val selected = choice.id == selectedId
                 Card(
-                    modifier = Modifier.fillMaxWidth().clickable { selectedId = choice.id },
+                    // the whole row is the single control (selectable radio), so a screen reader reads name, details and state together
+                    modifier = Modifier.fillMaxWidth().selectable(
+                        selected = selected,
+                        role = Role.RadioButton,
+                        onClick = { selectedId = choice.id }
+                    ),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
@@ -104,7 +110,7 @@ fun SingleChoiceVoting(choices: List<Choice>, onSubmit: (Choice) -> Unit) {
                         ChoiceThumb(choice)
                         Spacer(Modifier.width(12.dp))
                         ChoiceTexts(choice, Modifier.weight(1f))
-                        RadioButton(selected = selected, onClick = { selectedId = choice.id })
+                        RadioButton(selected = selected, onClick = null)
                     }
                 }
             }
@@ -159,12 +165,12 @@ fun RankingVoting(choices: List<Choice>, onSubmit: (List<Choice>) -> Unit) {
                             IconButton(
                                 onClick = { order.add(index - 1, order.removeAt(index)) },
                                 enabled = index > 0,
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(48.dp)
                             ) { Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Yukarı al") }
                             IconButton(
                                 onClick = { order.add(index + 1, order.removeAt(index)) },
                                 enabled = index < order.lastIndex,
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(48.dp)
                             ) { Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Aşağı al") }
                         }
                     }

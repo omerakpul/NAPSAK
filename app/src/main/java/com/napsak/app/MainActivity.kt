@@ -2,7 +2,15 @@ package com.napsak.app
 
 import android.content.Intent
 import android.os.Bundle
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Alignment
+import com.napsak.app.data.remote.ConnectivityObserver
+import com.napsak.app.ui.OfflineBanner
+import javax.inject.Inject
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -35,6 +43,9 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    @Inject
+    lateinit var connectivity: ConnectivityObserver
+
     /** Room code from a tapped invite link, consumed by the home screen. */
     private val pendingRoomCode = mutableStateOf<String?>(null)
 
@@ -53,6 +64,7 @@ class MainActivity : ComponentActivity() {
         pendingRoomCode.value = roomCodeFrom(intent)
         setContent {
             NAPSAKTheme {
+                val online by connectivity.isOnline.collectAsState()
                 val navController = rememberNavController()
                 val sharedViewModel: SharedSessionViewModel = hiltViewModel()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -137,12 +149,16 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 ) { innerPadding ->
-                    NapsakNavGraph(
-                        navController = navController,
-                        sharedViewModel = sharedViewModel,
-                        initialRoomCode = pendingRoomCode.value,
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                        // pushes the screen down instead of covering its title
+                        AnimatedVisibility(visible = !online) { OfflineBanner() }
+                        NapsakNavGraph(
+                            navController = navController,
+                            sharedViewModel = sharedViewModel,
+                            initialRoomCode = pendingRoomCode.value,
+                            modifier = Modifier.weight(1f).fillMaxWidth()
+                        )
+                    }
                 }
             }
         }

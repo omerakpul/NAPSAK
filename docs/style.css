@@ -14,7 +14,7 @@
     --surface-border: rgba(255, 255, 255, 0.05);
     --text-primary: #FFFFFF;
     --text-secondary: rgba(255, 255, 255, 0.7);
-    --text-muted: rgba(255, 255, 255, 0.4);
+    --text-muted: rgba(255, 255, 255, 0.62);
     
     --gradient: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     --gradient-glow: linear-gradient(135deg, rgba(255, 107, 53, 0.15) 0%, rgba(224, 82, 29, 0.15) 100%);
@@ -926,3 +926,52 @@ h2 {
 .rank-controls button:disabled { opacity: 0.3; cursor: default; }
 .lv-radio { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--text-muted); flex-shrink: 0; }
 .list-vote-item.selected .lv-radio { border-color: var(--primary); background: radial-gradient(var(--primary) 45%, transparent 50%); }
+
+
+/* ---- Connection banner ---- */
+.net-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: #B45309; color: #fff;
+    text-align: center; padding: 10px 16px; font-size: 14px; font-weight: 600; }
+
+/* ---- Join / create ---- */
+.or-divider { display: flex; align-items: center; gap: 12px; margin: 14px 0; color: var(--text-secondary); font-size: 13px; }
+.or-divider::before, .or-divider::after { content: ""; flex: 1; height: 1px; background: var(--surface-border); }
+
+/* ---- Host tools (lobby) ---- */
+.host-tools { margin-top: 16px; display: flex; flex-direction: column; gap: 12px; }
+.share-row { display: flex; gap: 14px; align-items: center; }
+.host-qr { width: 112px; height: 112px; background: #fff; border-radius: 12px; padding: 6px; flex-shrink: 0; }
+.host-qr svg { width: 100%; height: 100%; display: block; }
+.share-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.host-link { font-size: 12px; color: var(--text-secondary); word-break: break-all; }
+
+/* ---- Option setup (host) ---- */
+#screen-setup .card { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.setup-sub { margin-top: 8px; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { background: rgba(255, 255, 255, 0.08); border: 1px solid var(--surface-border); color: var(--text-primary);
+    border-radius: 999px; padding: 10px 16px; min-height: 44px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.chip[aria-checked="true"], .chip.selected { background: var(--gradient); border-color: transparent; }
+.setup-textarea { width: 100%; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--surface-border);
+    border-radius: 14px; color: var(--text-primary); padding: 12px; font-size: 15px; resize: vertical; }
+.setup-list { display: flex; flex-direction: column; gap: 8px; }
+.setup-item { display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px; padding: 8px 10px; }
+.setup-item .lv-text { flex: 1; min-width: 0; }
+.icon-btn { background: none; border: none; color: var(--text-primary); width: 44px; height: 44px; border-radius: 12px;
+    font-size: 16px; cursor: pointer; flex-shrink: 0; }
+.icon-btn.danger { color: var(--danger); }
+.icon-btn.ok { color: var(--success); }
+
+/* ---- Voting wait states ---- */
+.waiting-names { color: var(--text-secondary); font-size: 14px; margin-top: 6px; }
+.vote-send-status { color: #F59E0B; font-size: 13px; margin-top: 6px; min-height: 1em; }
+.host-wait-prompt { margin-top: 14px; padding: 14px; border-radius: 16px; background: rgba(255, 255, 255, 0.06); }
+.host-wait-prompt p { margin-bottom: 10px; font-weight: 600; }
+.prompt-buttons { display: flex; gap: 10px; }
+.prompt-buttons button { flex: 1; }
+
+/* ---- Accessibility ---- */
+:focus-visible { outline: 3px solid #A78BFA; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

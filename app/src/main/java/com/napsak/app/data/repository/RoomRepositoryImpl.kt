@@ -6,6 +6,7 @@ import com.napsak.app.data.model.ParticipantDto
 import com.napsak.app.data.model.RoomDto
 import com.napsak.app.data.model.SuggestionDto
 import com.napsak.app.domain.model.VoteMode
+import com.napsak.app.data.remote.ConnectivityObserver
 import com.napsak.app.data.remote.SupabaseSession
 import com.napsak.app.domain.model.Choice
 import com.napsak.app.domain.model.Room
@@ -44,7 +45,8 @@ import javax.inject.Singleton
 class RoomRepositoryImpl @Inject constructor(
     private val supabase: SupabaseClient,
     private val session: SupabaseSession,
-    private val userPreferencesDataSource: UserPreferencesDataSource
+    private val userPreferencesDataSource: UserPreferencesDataSource,
+    private val connectivity: ConnectivityObserver
 ) : RoomRepository {
 
     private suspend fun rpc(function: String, params: JsonObject = JsonObject(emptyMap())) =
@@ -122,6 +124,8 @@ class RoomRepositoryImpl @Inject constructor(
 
         val refresh = Channel<Unit>(Channel.CONFLATED)
         launch { suggestionChanges.collect { refresh.trySend(Unit) } }
+        // events can be missed while offline: re-read the room as soon as the connection is back
+        launch { connectivity.isOnline.collect { online -> if (online) refresh.trySend(Unit) } }
         launch { roomChanges.collect { refresh.trySend(Unit) } }
         launch { participantChanges.collect { refresh.trySend(Unit) } }
         launch { choiceChanges.collect { refresh.trySend(Unit) } }
