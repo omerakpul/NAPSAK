@@ -5,67 +5,52 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.OpenableColumns
-import com.napsak.app.BuildConfig
+import com.napsak.app.data.remote.SupabaseSession
 import com.napsak.app.domain.model.UploadResult
 import com.napsak.app.domain.repository.ImageRepository
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.storage.storage
+import io.ktor.http.ContentType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MultipartBody
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.asRequestBody
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import java.io.FileOutputStream
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class ImageRepositoryImpl @Inject constructor(
-    private val client: OkHttpClient
+    private val supabase: SupabaseClient,
+    private val session: SupabaseSession
 ) : ImageRepository {
 
-    private val apiKey = BuildConfig.IMGBB_API_KEY
-    private val json = Json { ignoreUnknownKeys = true }
-    private val maxFileSizeBytes = 10 * 1024 * 1024 // 10 MB
+    private val bucket = "choice-images"
+    private val maxFileSizeBytes = 10 * 1024 * 1024 // 10 MB (source file); compressed output is far smaller
 
     override suspend fun uploadImage(context: Context, uri: Uri): UploadResult = withContext(Dispatchers.IO) {
+        var file: File? = null
         try {
             val fileSize = getUriFileSize(context, uri)
             if (fileSize > maxFileSizeBytes) {
                 return@withContext UploadResult.FileTooLarge
             }
 
-            val file = compressUriToFile(context, uri) ?: return@withContext UploadResult.Failure
-            val requestBody = MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart(
-                    "image",
-                    file.name,
-                    file.asRequestBody("image/*".toMediaType())
-                )
-                .build()
+            file = compressUriToFile(context, uri) ?: return@withContext UploadResult.Failure
+            val userId = session.userId()
+            val path = "$userId/${UUID.randomUUID()}.jpg"
 
-            val request = Request.Builder()
-                .url("https://api.imgbb.com/1/upload?key=$apiKey")
-                .post(requestBody)
-                .build()
-
-            client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return@withContext UploadResult.Failure
-                val bodyString = response.body?.string() ?: return@withContext UploadResult.Failure
-                val jsonObject = json.parseToJsonElement(bodyString).jsonObject
-                val data = jsonObject["data"]?.jsonObject ?: return@withContext UploadResult.Failure
-                val displayUrl = data["url"]?.jsonPrimitive?.content ?: return@withContext UploadResult.Failure
-                file.delete() // clean up temp file
-                return@withContext UploadResult.Success(displayUrl)
+            val images = supabase.storage.from(bucket)
+            images.upload(path, file.readBytes()) {
+                contentType = ContentType.Image.JPEG
+                upsert = false
             }
+            UploadResult.Success(images.publicUrl(path))
         } catch (e: Exception) {
             e.printStackTrace()
             UploadResult.Failure
+        } finally {
+            file?.delete()
         }
     }
 

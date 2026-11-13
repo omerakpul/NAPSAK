@@ -25,21 +25,23 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # Create local.properties and inject the ImgBB API key from GitHub repository secrets
-      - name: Create local.properties
+      # Supabase URL + publishable (anon) key are injected from repository secrets via env;
+      # app/build.gradle.kts reads SUPABASE_URL / SUPABASE_ANON_KEY.
+      - name: Check Supabase secrets
         run: |
-          echo "imgbb.api.key=${{ secrets.IMGBB_API_KEY }}" > local.properties
-
-      # Re-create the google-services.json file using the Base64 secret
-      - name: Decode Google Services JSON
-        run: |
-          echo "${{ secrets.FIREBASE_SECRET }}" | base64 -d > app/google-services.json
+          test -n "$SUPABASE_URL" && test -n "$SUPABASE_ANON_KEY" || { echo "Missing SUPABASE_URL / SUPABASE_ANON_KEY secrets"; exit 1; }
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
       - name: Grant Execute Permission for Gradlew
         run: chmod +x gradlew
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
       # Automatically publish/update the compiled APK to a 'latest' pre-release on GitHub
       - name: Upload APK to Latest Release

@@ -29,7 +29,7 @@ class UploadImageUseCaseTest {
     @Test
     fun `invoke should call repository uploadImage and return success`() = runTest {
         // Arrange
-        val expectedUrl = "https://imgbb.com/sample.jpg"
+        val expectedUrl = "https://example.supabase.co/storage/v1/object/public/choice-images/sample.jpg"
         coEvery { repository.uploadImage(context, uri) } returns UploadResult.Success(expectedUrl)
 
         // Act

@@ -1,5 +1,6 @@
 package com.napsak.app.ui.screens.lobby
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,11 +36,25 @@ fun LobbyScreen(
     sharedViewModel: SharedSessionViewModel,
     onNavigateToCreateChoices: (String) -> Unit,
     onNavigateToVoting: (String) -> Unit,
+    onNavigateBack: () -> Unit,
     viewModel: LobbyViewModel = hiltViewModel()
 ) {
     val roomState by viewModel.room.collectAsState()
     val currentUserId by viewModel.currentUserId.collectAsState()
     val context = LocalContext.current
+
+    val roomClosed by viewModel.roomClosed.collectAsState()
+
+    // Leaving the lobby (back) removes me from the room; the host leaving closes it.
+    BackHandler {
+        viewModel.leaveRoom(roomId)
+        onNavigateBack()
+    }
+
+    // Room was closed by the host while I was waiting
+    LaunchedEffect(roomClosed) {
+        if (roomClosed) onNavigateBack()
+    }
 
     // Start observing room updates when screen opens
     LaunchedEffect(roomId) {

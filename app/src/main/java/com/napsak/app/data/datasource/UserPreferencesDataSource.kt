@@ -25,20 +25,8 @@ class UserPreferencesDataSource @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     companion object {
-        private val KEY_USER_ID = stringPreferencesKey("user_id")
         private val KEY_USERNAME = stringPreferencesKey("username")
         private val KEY_SAVED_LISTS = stringPreferencesKey("saved_lists")
-    }
-
-    val userIdFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        val existingId = preferences[KEY_USER_ID]
-        if (existingId != null) {
-            existingId
-        } else {
-            // If no ID exists, we will generate one.
-            // Note: Since this flow is read-only, we save it permanently during name entry.
-            UUID.randomUUID().toString()
-        }
     }
 
     val usernameFlow: Flow<String?> = context.dataStore.data.map { preferences ->
@@ -58,9 +46,8 @@ class UserPreferencesDataSource @Inject constructor(
         }
     }
 
-    suspend fun saveUserCredentials(userId: String, username: String) {
+    suspend fun saveUserCredentials(@Suppress("UNUSED_PARAMETER") userId: String, username: String) {
         context.dataStore.edit { preferences ->
-            preferences[KEY_USER_ID] = userId
             preferences[KEY_USERNAME] = username
         }
     }

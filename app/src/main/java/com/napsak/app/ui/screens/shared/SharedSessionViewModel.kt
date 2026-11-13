@@ -8,6 +8,7 @@ import com.napsak.app.domain.model.RoomState
 import com.napsak.app.domain.repository.RoomRepository
 import com.napsak.app.domain.usecase.DeleteRoomUseCase
 import com.napsak.app.domain.usecase.EndVotingUseCase
+import com.napsak.app.domain.usecase.LeaveRoomUseCase
 import com.napsak.app.domain.usecase.ObserveRoomUseCase
 import com.napsak.app.domain.usecase.SubmitVotesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,6 +28,7 @@ class SharedSessionViewModel @Inject constructor(
     private val submitVotesUseCase: SubmitVotesUseCase,
     private val endVotingUseCase: EndVotingUseCase,
     private val deleteRoomUseCase: DeleteRoomUseCase,
+    private val leaveRoomUseCase: LeaveRoomUseCase,
     private val roomRepository: RoomRepository
 ) : ViewModel() {
 
@@ -91,9 +93,9 @@ class SharedSessionViewModel @Inject constructor(
             val room = _currentRoom.value
             val isHost = room?.hostId == _currentUserId.value
             if (isHost && winner != null) {
-                // End voting and sync winner Choice to Firebase database
-                endVotingUseCase(roomId, winner.id)
-                _winnerChoice.value = winner
+                // End voting; the server stores (and returns) the authoritative winner
+                val result = endVotingUseCase(roomId, winner.id)
+                _winnerChoice.value = resolveWinner(result.getOrNull(), winner)
                 onComplete()
             } else {
                 onComplete()
@@ -109,10 +111,29 @@ class SharedSessionViewModel @Inject constructor(
 
     fun declareWinner(roomId: String, winner: Choice, onComplete: () -> Unit) {
         viewModelScope.launch {
-            endVotingUseCase(roomId, winner.id)
-            _winnerChoice.value = winner
+            val result = endVotingUseCase(roomId, winner.id)
+            _winnerChoice.value = resolveWinner(result.getOrNull(), winner)
             onComplete()
         }
+    }
+
+    /** Host-only: close voting now (e.g. someone left or went idle). Server picks among the top-voted. */
+    fun finishVotingNow(roomId: String, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            val result = endVotingUseCase(roomId, null)
+            val winner = resolveWinner(result.getOrNull(), null)
+            if (winner != null) {
+                _winnerChoice.value = winner
+                onComplete()
+            }
+        }
+    }
+
+    private fun resolveWinner(winnerId: String?, fallback: Choice?): Choice? =
+        winnerId?.let { _currentRoom.value?.choices?.get(it) } ?: fallback
+
+    fun leaveRoom(roomId: String) {
+        viewModelScope.launch { leaveRoomUseCase(roomId) }
     }
 
     fun deleteRoom(roomId: String) {

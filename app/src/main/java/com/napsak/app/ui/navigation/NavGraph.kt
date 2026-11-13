@@ -66,6 +66,9 @@ fun NapsakNavGraph(
                     navController.navigate(Screen.Voting(roomId)) {
                         popUpTo(Screen.Home) { saveState = true }
                     }
+                },
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }
