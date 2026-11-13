@@ -36,6 +36,20 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private val _resumableRoomId = MutableStateFlow<String?>(null)
+    val resumableRoomId: StateFlow<String?> = _resumableRoomId.asStateFlow()
+
+    fun refreshResumableRoom() {
+        viewModelScope.launch { _resumableRoomId.value = roomRepository.findResumableRoomId() }
+    }
+
+    fun leaveResumableRoom(roomId: String) {
+        viewModelScope.launch {
+            roomRepository.leaveRoom(roomId)
+            _resumableRoomId.value = null
+        }
+    }
+
     private val _savedUsername = MutableStateFlow("")
     val savedUsername: StateFlow<String> = _savedUsername.asStateFlow()
 

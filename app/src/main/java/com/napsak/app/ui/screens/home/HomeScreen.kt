@@ -28,16 +28,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.napsak.app.ui.theme.CoralPrimary
 import com.napsak.app.ui.theme.CoralPrimaryDark
 import com.napsak.app.ui.theme.AmberSecondary
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun HomeScreen(
+    initialRoomCode: String? = null,
     onNavigateToLobby: (String) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -54,7 +57,17 @@ fun HomeScreen(
         }
     }
 
-    var roomCode by remember { mutableStateOf("") }
+    var roomCode by remember(initialRoomCode) { mutableStateOf(initialRoomCode.orEmpty()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val resumableRoomId by viewModel.resumableRoomId.collectAsState()
+
+    LaunchedEffect(Unit) { viewModel.refreshResumableRoom() }
+
+    fun friendly(e: Throwable): String = when {
+        e.message?.contains("Oda") == true || e.message?.contains("Oylama") == true -> e.message.orEmpty()
+        else -> "Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene."
+    }
     val scrollState = rememberScrollState()
 
     val gradient = Brush.horizontalGradient(
@@ -148,6 +161,30 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
+                    // Resume an unfinished room (e.g. after the app was closed)
+                    resumableRoomId?.let { roomId ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            )
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Devam eden bir odan var: $roomId",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Button(onClick = { onNavigateToLobby(roomId) }) { Text("Odaya Dön") }
+                                    TextButton(onClick = { viewModel.leaveResumableRoom(roomId) }) { Text("Odadan Ayrıl") }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
                     // Host & Join actions (only visible when name is entered)
                     AnimatedVisibility(
                         visible = name.isNotBlank(),
@@ -158,14 +195,18 @@ fun HomeScreen(
                             // Create Room Button
                             Button(
                                 onClick = {
-                                    if (name.isNotBlank()) {
+                                    if (name.isNotBlank() && !isLoading) {
+                                        isLoading = true
+                                        errorMessage = null
                                         viewModel.createRoom(name) { result ->
-                                            result.onSuccess { room ->
-                                                onNavigateToLobby(room.id)
-                                            }
+                                            isLoading = false
+                                            result
+                                                .onSuccess { room -> onNavigateToLobby(room.id) }
+                                                .onFailure { errorMessage = friendly(it) }
                                         }
                                     }
                                 },
+                                enabled = !isLoading,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(56.dp),
@@ -190,7 +231,7 @@ fun HomeScreen(
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = "Yeni Oda Oluştur",
+                                            text = if (isLoading) "Bekleniyor..." else "Yeni Oda Oluştur",
                                             style = MaterialTheme.typography.bodyLarge.copy(
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color.White
@@ -220,9 +261,13 @@ fun HomeScreen(
 
                             OutlinedTextField(
                                 value = roomCode,
-                                onValueChange = { roomCode = it },
-                                label = { Text("Oda Kodu") },
+                                onValueChange = {
+                                    roomCode = it.filter(Char::isDigit).take(6)
+                                    errorMessage = null
+                                },
+                                label = { Text("Oda Kodu (6 haneli)") },
                                 singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 shape = RoundedCornerShape(16.dp),
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = OutlinedTextFieldDefaults.colors(
@@ -235,11 +280,14 @@ fun HomeScreen(
 
                             Button(
                                 onClick = {
-                                    if (name.isNotBlank() && roomCode.isNotBlank()) {
+                                    if (name.isNotBlank() && roomCode.length == 6 && !isLoading) {
+                                        isLoading = true
+                                        errorMessage = null
                                         viewModel.joinRoom(roomCode, name) { result ->
-                                            result.onSuccess { room ->
-                                                onNavigateToLobby(room.id)
-                                            }
+                                            isLoading = false
+                                            result
+                                                .onSuccess { room -> onNavigateToLobby(room.id) }
+                                                .onFailure { errorMessage = friendly(it) }
                                         }
                                     }
                                 },
@@ -247,7 +295,7 @@ fun HomeScreen(
                                     .fillMaxWidth()
                                     .height(56.dp),
                                 shape = RoundedCornerShape(16.dp),
-                                enabled = roomCode.isNotBlank(),
+                                enabled = roomCode.length == 6 && !isLoading,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.secondary
                                 )
@@ -268,6 +316,17 @@ fun HomeScreen(
                                         contentDescription = "Join Room"
                                     )
                                 }
+                            }
+
+                            errorMessage?.let { message ->
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = message,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                             }
                         }
                     }

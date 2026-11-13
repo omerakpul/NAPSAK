@@ -174,6 +174,27 @@ class RoomRepositoryImpl @Inject constructor(
             }).decodeAs<String>()
         }
 
+    override suspend fun findResumableRoomId(): String? = runCatching {
+        val uid = session.userId()
+        // RLS only returns rooms I host or take part in
+        val room = supabase.from("rooms").select {
+            filter { neq("state", "RESULT") }
+            order("created_at", Order.DESCENDING)
+            limit(1)
+        }.decodeList<RoomDto>().firstOrNull() ?: return@runCatching null
+        val me = supabase.from("participants").select {
+            filter {
+                eq("room_id", room.id)
+                eq("user_id", uid)
+            }
+        }.decodeList<ParticipantDto>().firstOrNull() ?: return@runCatching null
+        when {
+            room.state == "WAITING" -> room.id
+            room.state == "VOTING" && !me.hasVoted -> room.id
+            else -> null
+        }
+    }.getOrNull()
+
     override suspend fun leaveRoom(roomId: String): Result<Unit> = runCatching {
         rpc("leave_room", buildJsonObject { put("p_room", roomId) })
         Unit

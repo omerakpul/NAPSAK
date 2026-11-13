@@ -1,6 +1,8 @@
 package com.napsak.app
 
+import android.content.Intent
 import android.os.Bundle
+import androidx.compose.runtime.mutableStateOf
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -31,9 +33,23 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    /** Room code from a tapped invite link, consumed by the home screen. */
+    private val pendingRoomCode = mutableStateOf<String?>(null)
+
+    private fun roomCodeFrom(intent: Intent?): String? =
+        intent?.data?.getQueryParameter("room")?.takeIf { code -> code.length == 6 && code.all { it.isDigit() } }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        roomCodeFrom(intent)?.let { pendingRoomCode.value = it }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        pendingRoomCode.value = roomCodeFrom(intent)
         setContent {
             NAPSAKTheme {
                 val navController = rememberNavController()
@@ -102,6 +118,7 @@ class MainActivity : ComponentActivity() {
                     NapsakNavGraph(
                         navController = navController,
                         sharedViewModel = sharedViewModel,
+                        initialRoomCode = pendingRoomCode.value,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

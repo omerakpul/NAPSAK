@@ -29,6 +29,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.activity.compose.BackHandler
 import coil3.compose.AsyncImage
+import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import com.napsak.app.domain.model.Choice
 import com.napsak.app.domain.model.RoomState
 import com.napsak.app.ui.screens.shared.SharedSessionViewModel
@@ -54,6 +57,27 @@ fun VotingScreen(
 
     var currentIndex by remember { mutableIntStateOf(0) }
     val currentChoice = choices.getOrNull(currentIndex)
+
+    // History of swipes so the last one can be undone (true = liked)
+    val swipeHistory = remember { mutableStateListOf<Boolean>() }
+    val haptics = LocalHapticFeedback.current
+
+    val registerSwipe: (Boolean) -> Unit = { liked ->
+        if (liked) {
+            currentChoice?.let { if (!likedChoices.contains(it)) likedChoices.add(it) }
+        }
+        swipeHistory.add(liked)
+        currentIndex++
+        haptics.performHapticFeedback(if (liked) HapticFeedbackType.Confirm else HapticFeedbackType.Reject)
+    }
+
+    val undoLastSwipe: () -> Unit = {
+        if (swipeHistory.isNotEmpty() && currentIndex in 1 until choices.size) {
+            val wasLiked = swipeHistory.removeAt(swipeHistory.lastIndex)
+            currentIndex--
+            if (wasLiked) choices.getOrNull(currentIndex)?.let { likedChoices.remove(it) }
+        }
+    }
 
     var isSelectingWinner by remember { mutableStateOf(false) }
     var animatingChoice by remember { mutableStateOf<Choice?>(null) }
@@ -193,17 +217,8 @@ fun VotingScreen(
                 if (currentChoice != null) {
                     SwipeableCard(
                         choice = currentChoice,
-                        onSwipeLeft = {
-                            // Dislike - just skip
-                            currentIndex++
-                        },
-                        onSwipeRight = {
-                            // Like - add to liked list
-                            if (!likedChoices.contains(currentChoice)) {
-                                likedChoices.add(currentChoice)
-                            }
-                            currentIndex++
-                        }
+                        onSwipeLeft = { registerSwipe(false) },
+                        onSwipeRight = { registerSwipe(true) }
                     )
                 } else if (choices.isNotEmpty()) {
                     // Voting Finished state
@@ -320,10 +335,7 @@ fun VotingScreen(
                 ) {
                     // Dislike Button (Cross)
                     IconButton(
-                        onClick = {
-                            // Dislike - just skip
-                            currentIndex++
-                        },
+                        onClick = { registerSwipe(false) },
                         modifier = Modifier
                             .size(64.dp)
                             .clip(CircleShape)
@@ -337,19 +349,26 @@ fun VotingScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(48.dp))
+                    Spacer(modifier = Modifier.width(20.dp))
+
+                    // Undo the previous card
+                    IconButton(
+                        onClick = undoLastSwipe,
+                        enabled = swipeHistory.isNotEmpty() && currentIndex in 1 until choices.size,
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Undo,
+                            contentDescription = "Geri al",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(20.dp))
 
                     // Like Button (Heart)
                     IconButton(
-                        onClick = {
-                            // Like - add to liked list
-                            currentChoice?.let { choice ->
-                                if (!likedChoices.contains(choice)) {
-                                    likedChoices.add(choice)
-                                }
-                            }
-                            currentIndex++
-                        },
+                        onClick = { registerSwipe(true) },
                         modifier = Modifier
                             .size(64.dp)
                             .clip(CircleShape)

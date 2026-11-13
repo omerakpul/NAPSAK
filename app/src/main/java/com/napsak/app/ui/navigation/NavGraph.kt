@@ -22,6 +22,7 @@ import com.napsak.app.ui.screens.result.ResultScreen
 fun NapsakNavGraph(
     navController: NavHostController,
     sharedViewModel: SharedSessionViewModel,
+    initialRoomCode: String? = null,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -31,6 +32,7 @@ fun NapsakNavGraph(
     ) {
         composable<Screen.Home> {
             HomeScreen(
+                initialRoomCode = initialRoomCode,
                 onNavigateToLobby = { roomId ->
                     navController.navigate(Screen.Lobby(roomId))
                 }
