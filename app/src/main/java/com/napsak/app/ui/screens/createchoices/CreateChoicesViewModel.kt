@@ -4,6 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.napsak.app.data.datasource.UserPreferencesDataSource
 import com.napsak.app.domain.model.Choice
+import com.napsak.app.domain.model.Place
+import com.napsak.app.domain.model.Suggestion
+import com.napsak.app.domain.model.VoteMode
+import com.napsak.app.domain.repository.PlaceSearchRepository
+import com.napsak.app.domain.repository.RoomRepository
+import com.napsak.app.domain.util.parseQuickChoices
+import kotlinx.coroutines.Job
 import com.napsak.app.domain.model.SavedChoiceList
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,15 +32,112 @@ data class CreateChoicesUiState(
     val currentLongitude: String = "",
     val isEditing: Boolean = false,
     val editingChoiceId: String? = null,
-    val savedLists: List<SavedChoiceList> = emptyList()
+    val savedLists: List<SavedChoiceList> = emptyList(),
+    val voteMode: VoteMode = VoteMode.LIKE,
+    val quickEntryText: String = "",
+    val placeQuery: String = "",
+    val placeResults: List<Place> = emptyList(),
+    val isSearchingPlaces: Boolean = false,
+    val placeSearchFailed: Boolean = false,
+    val suggestions: List<Suggestion> = emptyList()
 )
 
 @HiltViewModel
 class CreateChoicesViewModel @Inject constructor(
     private val userPreferencesDataSource: UserPreferencesDataSource,
     private val startVotingUseCase: StartVotingUseCase,
-    private val uploadImageUseCase: com.napsak.app.domain.usecase.UploadImageUseCase
+    private val uploadImageUseCase: com.napsak.app.domain.usecase.UploadImageUseCase,
+    private val roomRepository: RoomRepository,
+    private val placeSearch: PlaceSearchRepository
 ) : ViewModel() {
+
+    private var suggestionsJob: Job? = null
+
+    /** Follows the room so the host sees friends' suggestions arrive live. */
+    fun observeSuggestions(roomId: String) {
+        if (suggestionsJob?.isActive == true) return
+        suggestionsJob = viewModelScope.launch {
+            roomRepository.observeRoom(roomId).collect { room ->
+                _uiState.update { it.copy(suggestions = room?.suggestions.orEmpty()) }
+            }
+        }
+    }
+
+    fun acceptSuggestion(roomId: String, suggestion: Suggestion) {
+        val alreadyThere = _uiState.value.choices.any { it.name.equals(suggestion.name, ignoreCase = true) }
+        if (!alreadyThere) {
+            _uiState.update {
+                it.copy(
+                    choices = it.choices + Choice(
+                        id = UUID.randomUUID().toString(),
+                        name = suggestion.name,
+                        details = suggestion.details
+                    )
+                )
+            }
+        }
+        dismissSuggestion(roomId, suggestion)
+    }
+
+    fun dismissSuggestion(roomId: String, suggestion: Suggestion) {
+        viewModelScope.launch { roomRepository.dismissSuggestion(roomId, suggestion.id) }
+    }
+
+    fun onVoteModeChange(mode: VoteMode) {
+        _uiState.update { it.copy(voteMode = mode) }
+    }
+
+    fun onQuickEntryChange(text: String) {
+        _uiState.update { it.copy(quickEntryText = text) }
+    }
+
+    /** Adds one option per pasted line (skipping names already in the list). Returns how many were added. */
+    fun addQuickEntries(): Int {
+        val state = _uiState.value
+        val existing = state.choices.map { it.name.lowercase() }.toSet()
+        val room = (50 - state.choices.size).coerceAtLeast(0)
+        val fresh = parseQuickChoices(state.quickEntryText)
+            .filter { it.name.lowercase() !in existing }
+            .take(room)
+        if (fresh.isNotEmpty()) {
+            _uiState.update { it.copy(choices = it.choices + fresh, quickEntryText = "") }
+        }
+        return fresh.size
+    }
+
+    fun onPlaceQueryChange(query: String) {
+        _uiState.update { it.copy(placeQuery = query, placeSearchFailed = false) }
+    }
+
+    fun searchPlaces() {
+        val query = _uiState.value.placeQuery.trim()
+        if (query.length < 2) return
+        _uiState.update { it.copy(isSearchingPlaces = true, placeSearchFailed = false) }
+        viewModelScope.launch {
+            val result = placeSearch.search(query)
+            _uiState.update {
+                it.copy(
+                    isSearchingPlaces = false,
+                    placeResults = result.getOrDefault(emptyList()),
+                    placeSearchFailed = result.isFailure
+                )
+            }
+        }
+    }
+
+    /** Fills the option form from a map result so it can still be edited before adding. */
+    fun selectPlace(place: Place) {
+        _uiState.update {
+            it.copy(
+                currentName = place.name.take(100),
+                currentDetails = place.address.take(500),
+                currentLatitude = place.latitude.toString(),
+                currentLongitude = place.longitude.toString(),
+                placeQuery = "",
+                placeResults = emptyList()
+            )
+        }
+    }
 
     fun uploadImage(
         context: android.content.Context,
@@ -237,14 +341,12 @@ class CreateChoicesViewModel @Inject constructor(
         }
     }
 
-    fun startVoting(roomId: String, onComplete: () -> Unit) {
+    fun startVoting(roomId: String, onFailure: () -> Unit = {}, onComplete: () -> Unit) {
         viewModelScope.launch {
             val currentChoices = _uiState.value.choices
             if (currentChoices.isNotEmpty()) {
-                val result = startVotingUseCase(roomId, currentChoices)
-                if (result.isSuccess) {
-                    onComplete()
-                }
+                val result = startVotingUseCase(roomId, currentChoices, _uiState.value.voteMode)
+                if (result.isSuccess) onComplete() else onFailure()
             }
         }
     }

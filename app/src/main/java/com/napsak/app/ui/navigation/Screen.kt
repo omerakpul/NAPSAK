@@ -10,6 +10,9 @@ sealed interface Screen {
     data object Lists : Screen
 
     @Serializable
+    data object History : Screen
+
+    @Serializable
     data class EditList(val listId: String = "") : Screen
 
     @Serializable

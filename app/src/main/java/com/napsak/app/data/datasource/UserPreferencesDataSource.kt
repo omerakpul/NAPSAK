@@ -14,6 +14,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 import com.napsak.app.domain.model.Choice
+import com.napsak.app.domain.model.HistoryEntry
 import com.napsak.app.domain.model.SavedChoiceList
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -27,6 +28,8 @@ class UserPreferencesDataSource @Inject constructor(
     companion object {
         private val KEY_USERNAME = stringPreferencesKey("username")
         private val KEY_SAVED_LISTS = stringPreferencesKey("saved_lists")
+        private val KEY_HISTORY = stringPreferencesKey("history")
+        private const val HISTORY_LIMIT = 50
     }
 
     val usernameFlow: Flow<String?> = context.dataStore.data.map { preferences ->
@@ -44,6 +47,35 @@ class UserPreferencesDataSource @Inject constructor(
         } else {
             getDefaultLists()
         }
+    }
+
+    /** Finished decisions, newest first. Stored only on this device. */
+    val historyFlow: Flow<List<HistoryEntry>> = context.dataStore.data.map { preferences ->
+        preferences[KEY_HISTORY]?.let {
+            try { Json.decodeFromString<List<HistoryEntry>>(it) } catch (e: Exception) { emptyList() }
+        } ?: emptyList()
+    }
+
+    private fun Preferences.history(): List<HistoryEntry> = this[KEY_HISTORY]?.let {
+        try { Json.decodeFromString<List<HistoryEntry>>(it) } catch (e: Exception) { emptyList() }
+    } ?: emptyList()
+
+    /** Adds [entry]; a decision for the same room is replaced instead of duplicated. */
+    suspend fun addHistory(entry: HistoryEntry) {
+        context.dataStore.edit { preferences ->
+            val updated = (listOf(entry) + preferences.history().filter { it.roomId != entry.roomId }).take(HISTORY_LIMIT)
+            preferences[KEY_HISTORY] = Json.encodeToString(updated)
+        }
+    }
+
+    suspend fun deleteHistory(id: String) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_HISTORY] = Json.encodeToString(preferences.history().filter { it.id != id })
+        }
+    }
+
+    suspend fun clearHistory() {
+        context.dataStore.edit { preferences -> preferences.remove(KEY_HISTORY) }
     }
 
     suspend fun saveUserCredentials(@Suppress("UNUSED_PARAMETER") userId: String, username: String) {

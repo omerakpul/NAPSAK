@@ -7,6 +7,7 @@ import com.napsak.app.data.remote.SupabaseSession
 import com.napsak.app.data.repository.RoomRepositoryImpl
 import com.napsak.app.domain.model.Choice
 import com.napsak.app.domain.model.RoomState
+import com.napsak.app.domain.model.VoteMode
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.MemorySessionManager
@@ -81,6 +82,53 @@ class SupabaseRoomFlowTest {
             val restored2 = client2.auth.loadFromStorage()
             step("default: second client restored=$restored2 user=${client2.auth.currentUserOrNull()?.id}")
             org.junit.Assert.assertEquals(id1, client2.auth.currentUserOrNull()?.id)
+        }
+    }
+
+    @Test
+    fun suggestions_and_vote_modes() = runBlocking<Unit> {
+        withTimeout(150_000) {
+            val host = repo(newClient())
+            val guest = repo(newClient())
+            val roomId = host.createRoom("Ali").first().getOrThrow().id
+            guest.joinRoom(roomId, "Veli").first().getOrThrow()
+
+            // guest proposes an option: the host sees it, the guest sees only their own
+            step("suggest")
+            guest.suggestChoice(roomId, "Sushi Bar", "Önerim").getOrThrow()
+            val seenByHost = host.observeRoom(roomId).await("host sees suggestion") { r -> r?.suggestions?.size == 1 }!!
+            assertEquals("Sushi Bar", seenByHost.suggestions.single().name)
+            assertEquals(1, guest.observeRoom(roomId).await("guest sees own suggestion") { r -> r?.suggestions?.size == 1 }!!.suggestions.size)
+            // the host can dismiss it
+            host.dismissSuggestion(roomId, seenByHost.suggestions.single().id).getOrThrow()
+            host.observeRoom(roomId).await("suggestion dismissed") { r -> r?.suggestions?.isEmpty() == true }
+
+            // RANK: Borda points (3 options -> 3/2/1)
+            val choices = listOf(Choice(id = "a", name = "Pizza"), Choice(id = "b", name = "Burger"), Choice(id = "c", name = "Sushi"))
+            host.startVotingWithChoices(roomId, choices, VoteMode.RANK).getOrThrow()
+            val ranking = guest.observeRoom(roomId).await("guest sees RANK room") { it?.state == RoomState.VOTING }!!
+            assertEquals(VoteMode.RANK, ranking.voteMode)
+            assertTrue("late suggestions are rejected", guest.suggestChoice(roomId, "Geç kaldı").isFailure)
+            assertTrue("duplicates are rejected", guest.submitVotes(roomId, listOf("a", "a", "b")).isFailure)
+            host.submitVotes(roomId, listOf("c", "a", "b")).getOrThrow()   // c=3 a=2 b=1
+            guest.submitVotes(roomId, listOf("a", "c", "b")).getOrThrow()  // a=3 c=2 b=1
+            val tally = host.observeRoom(roomId).await("all voted") { r -> r != null && r.participants.values.all { it.hasVoted } }!!
+            assertEquals(5, tally.choices["a"]?.voteCount)
+            assertEquals(5, tally.choices["c"]?.voteCount)
+            assertEquals(2, tally.choices["b"]?.voteCount)
+            host.deleteRoom(roomId).getOrThrow()
+
+            // SINGLE: exactly one pick
+            val room2 = host.createRoom("Ali").first().getOrThrow().id
+            guest.joinRoom(room2, "Veli").first().getOrThrow()
+            host.startVotingWithChoices(room2, choices, VoteMode.SINGLE).getOrThrow()
+            assertTrue("two picks are rejected", guest.submitVotes(room2, listOf("a", "b")).isFailure)
+            guest.submitVotes(room2, listOf("b")).getOrThrow()
+            host.submitVotes(room2, listOf("b")).getOrThrow()
+            val single = host.observeRoom(room2).await("single tally") { r -> r != null && r.participants.values.all { it.hasVoted } }!!
+            assertEquals(2, single.choices["b"]?.voteCount)
+            assertEquals("b", host.endVotingAndSetWinner(room2, null).getOrThrow())
+            host.deleteRoom(room2).getOrThrow()
         }
     }
 

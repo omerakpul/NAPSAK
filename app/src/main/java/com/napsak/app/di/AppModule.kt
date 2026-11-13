@@ -22,6 +22,12 @@ abstract class AppModule {
 
     @Binds
     @Singleton
+    abstract fun bindPlaceSearchRepository(
+        impl: com.napsak.app.data.remote.NominatimPlaceSearchRepository
+    ): com.napsak.app.domain.repository.PlaceSearchRepository
+
+    @Binds
+    @Singleton
     abstract fun bindImageRepository(
         imageRepositoryImpl: ImageRepositoryImpl
     ): ImageRepository

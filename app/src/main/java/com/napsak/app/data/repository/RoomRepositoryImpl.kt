@@ -4,6 +4,8 @@ import com.napsak.app.data.datasource.UserPreferencesDataSource
 import com.napsak.app.data.model.ChoiceDto
 import com.napsak.app.data.model.ParticipantDto
 import com.napsak.app.data.model.RoomDto
+import com.napsak.app.data.model.SuggestionDto
+import com.napsak.app.domain.model.VoteMode
 import com.napsak.app.data.remote.SupabaseSession
 import com.napsak.app.domain.model.Choice
 import com.napsak.app.domain.model.Room
@@ -64,7 +66,12 @@ class RoomRepositoryImpl @Inject constructor(
             filter { eq("room_id", roomId) }
             order("position", Order.ASCENDING)
         }.decodeList<ChoiceDto>()
-        return room.toDomain(participants, choices)
+        // RLS: the host sees all suggestions, a participant only their own
+        val suggestions = supabase.from("suggestions").select {
+            filter { eq("room_id", roomId) }
+            order("created_at", Order.ASCENDING)
+        }.decodeList<SuggestionDto>()
+        return room.toDomain(participants, choices, suggestions)
     }
 
     override fun createRoom(hostName: String): Flow<Result<Room>> = flow {
@@ -108,7 +115,13 @@ class RoomRepositoryImpl @Inject constructor(
             filter("room_id", io.github.jan.supabase.postgrest.query.filter.FilterOperator.EQ, roomId)
         }
 
+        val suggestionChanges = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "suggestions"
+            filter("room_id", io.github.jan.supabase.postgrest.query.filter.FilterOperator.EQ, roomId)
+        }
+
         val refresh = Channel<Unit>(Channel.CONFLATED)
+        launch { suggestionChanges.collect { refresh.trySend(Unit) } }
         launch { roomChanges.collect { refresh.trySend(Unit) } }
         launch { participantChanges.collect { refresh.trySend(Unit) } }
         launch { choiceChanges.collect { refresh.trySend(Unit) } }
@@ -137,7 +150,7 @@ class RoomRepositoryImpl @Inject constructor(
             Unit
         }
 
-    override suspend fun startVotingWithChoices(roomId: String, choices: List<Choice>): Result<Unit> =
+    override suspend fun startVotingWithChoices(roomId: String, choices: List<Choice>, mode: VoteMode): Result<Unit> =
         runCatching {
             val payload = JsonArray(choices.map { c ->
                 buildJsonObject {
@@ -153,6 +166,26 @@ class RoomRepositoryImpl @Inject constructor(
             rpc("start_voting", buildJsonObject {
                 put("p_room", roomId)
                 put("p_choices", payload)
+                put("p_mode", mode.name)
+            })
+            Unit
+        }
+
+    override suspend fun suggestChoice(roomId: String, name: String, details: String): Result<Unit> =
+        runCatching {
+            rpc("suggest_choice", buildJsonObject {
+                put("p_room", roomId)
+                put("p_name", name)
+                put("p_details", details)
+            })
+            Unit
+        }
+
+    override suspend fun dismissSuggestion(roomId: String, suggestionId: String): Result<Unit> =
+        runCatching {
+            rpc("dismiss_suggestion", buildJsonObject {
+                put("p_room", roomId)
+                put("p_id", suggestionId)
             })
             Unit
         }

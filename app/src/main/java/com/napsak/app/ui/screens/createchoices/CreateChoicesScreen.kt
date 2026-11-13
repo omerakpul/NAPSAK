@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.napsak.app.domain.model.Choice
+import com.napsak.app.domain.model.VoteMode
 import com.napsak.app.ui.theme.AmberSecondary
 import com.napsak.app.ui.theme.CoralPrimary
 import com.napsak.app.ui.theme.CoralPrimaryDark
@@ -51,10 +52,12 @@ import java.util.UUID
 @Composable
 fun CreateChoicesScreen(
     roomId: String,
-    onNavigateToVoting: (String, List<Choice>) -> Unit,
+    onNavigateToVoting: (String, List<Choice>, VoteMode) -> Unit,
     viewModel: CreateChoicesViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(roomId) { viewModel.observeSuggestions(roomId) }
 
     var showSaveDialog by remember { mutableStateOf(false) }
     var listNameInput by remember { mutableStateOf("") }
@@ -318,6 +321,25 @@ fun CreateChoicesScreen(
                 }
             }
 
+            SuggestionsCard(
+                suggestions = uiState.suggestions,
+                onAccept = { viewModel.acceptSuggestion(roomId, it) },
+                onDismiss = { viewModel.dismissSuggestion(roomId, it) }
+            )
+            if (uiState.suggestions.isNotEmpty()) Spacer(modifier = Modifier.height(12.dp))
+
+            PlaceSearchCard(
+                query = uiState.placeQuery,
+                onQueryChange = viewModel::onPlaceQueryChange,
+                onSearch = viewModel::searchPlaces,
+                results = uiState.placeResults,
+                isSearching = uiState.isSearchingPlaces,
+                failed = uiState.placeSearchFailed,
+                onSelect = viewModel::selectPlace
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             // Input Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -451,6 +473,14 @@ fun CreateChoicesScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            QuickEntryCard(
+                text = uiState.quickEntryText,
+                onTextChange = viewModel::onQuickEntryChange,
+                onAdd = viewModel::addQuickEntries
+            )
+
             Spacer(modifier = Modifier.height(24.dp))
 
             // Choice List Header
@@ -580,68 +610,26 @@ fun CreateChoicesScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            // room for the sticky start bar
+            Spacer(modifier = Modifier.height(190.dp))
+        }
 
-            // Start Voting Button
-            Button(
-                onClick = {
-                    viewModel.startVoting(roomId) {
-                        onNavigateToVoting(roomId, viewModel.getChoices())
+        StickyStartBar(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            choiceCount = uiState.choices.size,
+            mode = uiState.voteMode,
+            onModeChange = viewModel::onVoteModeChange,
+            onStart = {
+                viewModel.startVoting(
+                    roomId,
+                    onFailure = {
+                        Toast.makeText(context, "Oylama başlatılamadı, tekrar dene", Toast.LENGTH_SHORT).show()
                     }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                enabled = uiState.choices.size >= 2,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                contentPadding = PaddingValues()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            brush = if (uiState.choices.size >= 2) gradient
-                            else Brush.horizontalGradient(
-                                listOf(Color.Gray.copy(alpha = 0.4f), Color.Gray.copy(alpha = 0.4f))
-                            ),
-                            shape = RoundedCornerShape(16.dp)
-                        ),
-                    contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "Oylamaya Geç",
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(
-                            imageVector = Icons.Default.ArrowForward,
-                            contentDescription = "İleri",
-                            tint = Color.White
-                        )
-                    }
+                    onNavigateToVoting(roomId, viewModel.getChoices(), uiState.voteMode)
                 }
             }
-
-            if (uiState.choices.size < 2) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Oylamaya başlamak için en az 2 seçenek ekle",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                        textAlign = TextAlign.Center
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
+        )
     }
 
     // Save List Dialog
@@ -929,14 +917,7 @@ private fun ChoiceListItem(
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop
                     )
                 } else {
-                    val emoji = when (choice.category.lowercase()) {
-                        "yemek" -> "🍔"
-                        "aktivite" -> "🎬"
-                        "film" -> "🍿"
-                        "eğlence" -> "🎮"
-                        "kahve" -> "☕"
-                        else -> null
-                    }
+                    val emoji: String? = com.napsak.app.ui.CategoryStyle.emoji(choice.name, choice.category)
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         if (emoji != null) {
                             Text(

@@ -1,0 +1,29 @@
+package com.napsak.app.ui.screens.history
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.napsak.app.data.datasource.UserPreferencesDataSource
+import com.napsak.app.domain.model.HistoryEntry
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class HistoryViewModel @Inject constructor(
+    private val preferences: UserPreferencesDataSource
+) : ViewModel() {
+
+    val entries: StateFlow<List<HistoryEntry>> = preferences.historyFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun delete(id: String) {
+        viewModelScope.launch { preferences.deleteHistory(id) }
+    }
+
+    fun clear() {
+        viewModelScope.launch { preferences.clearHistory() }
+    }
+}
