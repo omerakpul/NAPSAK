@@ -1,18 +1,7 @@
-// Firebase Configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyAgnGXpzQ4ZvXIoasD3HjMf4Yq6zkb2t9U",
-    authDomain: "napsak-official.firebaseapp.com",
-    databaseURL: "https://napsak-official-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "napsak-official",
-    storageBucket: "napsak-official.firebasestorage.app",
-    messagingSenderId: "276047318651",
-    appId: "1:276047318651:web:9c1a5d6e27b140cf8c42a2"
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
-const auth = firebase.auth();
+// Supabase configuration (the URL and publishable key are public by design; access is enforced by RLS)
+const SUPABASE_URL = "https://cynchfpgcoilogxkvigx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_TbD_9w3C5qOG8nSr-aAm9g_vWfEDBuX";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // App State
 let roomId = "";
@@ -84,23 +73,27 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// Firebase Anonymous Authentication
-auth.onAuthStateChanged((user) => {
-    if (user) {
-        userId = user.uid;
+// Supabase Anonymous Authentication
+async function initAuth() {
+    btnJoin.disabled = true;
+    btnJoin.innerHTML = 'Bağlanılıyor... <i class="fa-solid fa-spinner fa-spin"></i>';
+    try {
+        let { data: { session } } = await sb.auth.getSession();
+        if (!session) {
+            const { data, error } = await sb.auth.signInAnonymously();
+            if (error) throw error;
+            session = data.session;
+        }
+        userId = session.user.id;
         localStorage.setItem("napsak_user_id", userId);
         btnJoin.disabled = false;
         btnJoin.innerHTML = 'Katıl <i class="fa-solid fa-right-to-bracket"></i>';
-        console.log("Firebase Auth signed in: ", userId);
-    } else {
-        btnJoin.disabled = true;
-        btnJoin.innerHTML = 'Bağlanılıyor... <i class="fa-solid fa-spinner fa-spin"></i>';
-        auth.signInAnonymously().catch(error => {
-            console.error("Anonymous auth failed:", error);
-            alert("Firebase sunucusuna bağlanılamadı!");
-        });
+    } catch (error) {
+        console.error("Anonymous auth failed:", error);
+        alert("Sunucuya bağlanılamadı!");
     }
-});
+}
+initAuth();
 
 // Screen Navigation Utility
 function showScreen(screenToShow) {
@@ -141,47 +134,32 @@ btnJoin.addEventListener("click", () => {
     btnJoin.disabled = true;
     btnJoin.innerHTML = 'Katılınıyor... <i class="fa-solid fa-spinner fa-spin"></i>';
 
-    // Verify room exists in Firebase
-    const roomRef = database.ref("rooms/" + roomId);
-    roomRef.once("value")
-        .then(snapshot => {
-            if (!snapshot.exists()) {
-                alert("Oda bulunamadı! Lütfen kodu kontrol edin.");
-                btnJoin.disabled = false;
-                btnJoin.innerHTML = 'Katıl <i class="fa-solid fa-right-to-bracket"></i>';
-                return;
-            }
-            
-            // Add participant to Firebase
-            const participantRef = database.ref("rooms/" + roomId + "/participants/" + userId);
-            return participantRef.set({
-                id: userId,
-                name: userName,
-                ready: false
-            }).then(() => {
-                // Update browser URL query parameter with room code
-                try {
-                    const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + `?room=${roomId}`;
-                    window.history.replaceState({ path: newUrl }, "", newUrl);
-                } catch (err) {
-                    console.warn("history.replaceState failed:", err);
-                }
+    const resetJoinButton = () => {
+        btnJoin.disabled = false;
+        btnJoin.innerHTML = 'Katıl <i class="fa-solid fa-right-to-bracket"></i>';
+    };
 
-                // Remove participant automatically on disconnect to avoid blocking voting if they leave
-                participantRef.onDisconnect().remove().catch(err => {
-                    console.warn("onDisconnect register failed:", err);
-                });
-                
-                // Success: Start observing room in real-time
-                observeRoom();
-            });
-        })
-        .catch(error => {
+    sb.rpc("join_room", { p_room: roomId, p_name: userName }).then(({ error }) => {
+        if (error) {
             console.error("Join room error:", error);
-            alert("Bağlantı hatası oluştu!");
-            btnJoin.disabled = false;
-            btnJoin.innerHTML = 'Katıl <i class="fa-solid fa-right-to-bracket"></i>';
-        });
+            const msg = (error.message || "").toLowerCase();
+            if (msg.includes("room not found")) alert("Oda bulunamadı! Lütfen kodu kontrol edin.");
+            else if (msg.includes("voting already started")) alert("Oylama başlamış, odaya girilemiyor.");
+            else if (msg.includes("room is full")) alert("Oda dolu!");
+            else alert("Bağlantı hatası oluştu!");
+            resetJoinButton();
+            return;
+        }
+        // Update browser URL query parameter with room code
+        try {
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + `?room=${roomId}`;
+            window.history.replaceState({ path: newUrl }, "", newUrl);
+        } catch (err) {
+            console.warn("history.replaceState failed:", err);
+        }
+        // Success: Start observing room in real-time
+        observeRoom();
+    });
 });
 
 // Toggle Ready Status
@@ -197,40 +175,110 @@ btnReady.addEventListener("click", () => {
         btnReady.innerHTML = 'Hazır Durumuna Geç <i class="fa-solid fa-circle-check"></i>';
     }
 
-    // Write to Firebase
-    database.ref("rooms/" + roomId + "/participants/" + userId + "/ready").set(isReady);
+    // supabase-js query builders are lazy: the request is only sent once .then() is attached
+    sb.rpc("set_ready", { p_room: roomId, p_ready: isReady }).then(({ error }) => {
+        if (error) console.warn("set_ready failed:", error.message);
+    });
 });
 
-// Observe Room updates in Realtime
-function observeRoom() {
-    const roomRef = database.ref("rooms/" + roomId);
-    roomRef.on("value", snapshot => {
-        roomData = snapshot.val();
-        if (!roomData) {
-            alert("Oda kapatıldı veya bulunamadı.");
-            window.location.reload();
-            return;
-        }
-
-        // Update real-time voter completion counts if in voting state
-        if (roomData.participants) {
-            const participants = Object.values(roomData.participants);
-            const total = participants.length;
-            const finishedCount = participants.filter(p => p.hasVoted).length;
-            const countText = document.getElementById("web-finished-count");
-            if (countText) {
-                countText.textContent = `Tamamlanan: ${finishedCount} / ${total}`;
-            }
-
-            const allVoted = total > 0 && participants.every(p => p.hasVoted);
-            if (allVoted && votesSubmitted && roomData.state === "VOTING") {
-                startWebResultCountdown();
-            }
-        }
-
-        // Check state transitions
-        handleRoomStateChange();
+// Load the whole room in the shape the UI expects (participants/choices keyed by id)
+async function fetchRoomData() {
+    const [r, p, c] = await Promise.all([
+        sb.from("rooms").select("*").eq("id", roomId).maybeSingle(),
+        sb.from("participants").select("*").eq("room_id", roomId),
+        sb.from("choices").select("*").eq("room_id", roomId).order("position")
+    ]);
+    if (r.error) throw r.error;
+    if (!r.data) return null;
+    const participants = {};
+    (p.data || []).forEach(x => {
+        participants[x.user_id] = { id: x.user_id, name: x.name, ready: x.is_ready, isReady: x.is_ready, hasVoted: x.has_voted };
     });
+    const choices = {};
+    (c.data || []).forEach(x => {
+        choices[x.id] = {
+            id: x.id, name: x.name, details: x.details, imageUrl: x.image_url,
+            voteCount: x.vote_count, latitude: x.latitude, longitude: x.longitude, category: x.category
+        };
+    });
+    return {
+        id: r.data.id, hostId: r.data.host_id, state: r.data.state,
+        winnerChoiceId: r.data.winner_choice_id, participants, choices
+    };
+}
+
+let roomChannel = null;
+let refreshing = false;
+let refreshAgain = false;
+
+async function refreshRoom() {
+    if (refreshing) { refreshAgain = true; return; }
+    refreshing = true;
+    try {
+        onRoomData(await fetchRoomData());
+    } catch (err) {
+        console.warn("Room refresh failed:", err);
+    } finally {
+        refreshing = false;
+        if (refreshAgain) { refreshAgain = false; refreshRoom(); }
+    }
+}
+
+// Observe Room updates in Realtime (events only trigger a re-read; a slow poll covers missed events)
+function observeRoom() {
+    roomChannel = sb.channel("room-" + roomId);
+    [["rooms", "id"], ["participants", "room_id"], ["choices", "room_id"]].forEach(([table, col]) => {
+        roomChannel.on("postgres_changes",
+            { event: "*", schema: "public", table, filter: `${col}=eq.${roomId}` },
+            () => refreshRoom());
+    });
+    roomChannel.subscribe(status => {
+        if (status === "SUBSCRIBED") refreshRoom();
+    });
+    setInterval(refreshRoom, 15000);
+}
+
+// Leave the room when the page is closed so an absent player never blocks the vote
+function leaveRoomOnExit() {
+    if (!roomId || !roomData || roomData.state === "RESULT") return;
+    sb.auth.getSession().then(({ data: { session } }) => {
+        if (!session) return;
+        fetch(SUPABASE_URL + "/rest/v1/rpc/leave_room", {
+            method: "POST", keepalive: true,
+            headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + session.access_token, "Content-Type": "application/json" },
+            body: JSON.stringify({ p_room: roomId })
+        });
+    });
+}
+window.addEventListener("pagehide", leaveRoomOnExit);
+window.addEventListener("pageshow", e => { if (e.persisted && roomId) window.location.reload(); });
+
+function onRoomData(data) {
+    roomData = data;
+    if (!roomData) {
+        alert("Oda kapatıldı veya bulunamadı.");
+        window.location.reload();
+        return;
+    }
+
+    // Update real-time voter completion counts if in voting state
+    if (roomData.participants) {
+        const participants = Object.values(roomData.participants);
+        const total = participants.length;
+        const finishedCount = participants.filter(p => p.hasVoted).length;
+        const countText = document.getElementById("web-finished-count");
+        if (countText) {
+            countText.textContent = `Tamamlanan: ${finishedCount} / ${total}`;
+        }
+
+        const allVoted = total > 0 && participants.every(p => p.hasVoted);
+        if (allVoted && votesSubmitted && roomData.state === "VOTING") {
+            startWebResultCountdown();
+        }
+    }
+
+    // Check state transitions
+    handleRoomStateChange();
 }
 
 // Handle Room State Navigation
@@ -251,7 +299,7 @@ function handleRoomStateChange() {
     } else if (state === "RESULT") {
         if (!votesSubmitted) {
             votesSubmitted = true;
-            submitVotesToFirebase();
+            submitVotes();
         }
         showScreen(screenResult);
         showResultScreen();
@@ -645,26 +693,17 @@ function showVotingFinished() {
     votingActions.classList.add("hidden");
     votingFinishedPlaceholder.classList.remove("hidden");
     
-    // Submit votes once to Firebase
+    // Submit votes once
     if (!votesSubmitted) {
         votesSubmitted = true;
-        submitVotesToFirebase();
+        submitVotes();
     }
 }
 
-function submitVotesToFirebase() {
-    // Write hasVoted = true to Firebase for this participant
-    database.ref("rooms/" + roomId + "/participants/" + userId + "/hasVoted").set(true);
-
-    if (likedChoiceIds.length === 0) return;
-    
-    const choicesRef = database.ref("rooms/" + roomId + "/choices");
-    
-    likedChoiceIds.forEach(choiceId => {
-        // Run database transaction to increment vote count atomically
-        choicesRef.child(choiceId).child("voteCount").transaction(currentVotes => {
-            return (currentVotes || 0) + 1;
-        });
+function submitVotes() {
+    // One RPC: records this player's likes and marks them as voted atomically (server enforces one vote per player)
+    sb.rpc("submit_votes", { p_room: roomId, p_choice_ids: likedChoiceIds }).then(({ error }) => {
+        if (error) console.warn("submit_votes failed:", error.message);
     });
 }
 
