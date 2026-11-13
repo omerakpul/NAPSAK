@@ -16,6 +16,7 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.storage.Storage
+import io.github.jan.supabase.storage.storage
 import android.util.Log
 import com.napsak.app.domain.model.Room
 import kotlinx.coroutines.flow.Flow
@@ -102,6 +103,12 @@ class SupabaseRoomFlowTest {
             val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
             assertEquals(200, conn.responseCode)
             assertEquals("image/jpeg", conn.contentType)
+
+            // Coil 3 (with the OkHttp network fetcher) must be able to load the same URL
+            val loaded = coil3.ImageLoader(ctx).execute(coil3.request.ImageRequest.Builder(ctx).data(url).build())
+            assertTrue("Coil failed: $loaded", loaded is coil3.request.SuccessResult)
+            // clean up: the uploader owns the object and may delete it
+            client.storage.from("choice-images").delete(url.substringAfter("/choice-images/"))
             file.delete()
         }
     }

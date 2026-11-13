@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.activity.compose.BackHandler
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.napsak.app.domain.model.Choice
 import com.napsak.app.domain.model.RoomState
 import com.napsak.app.ui.screens.shared.SharedSessionViewModel
