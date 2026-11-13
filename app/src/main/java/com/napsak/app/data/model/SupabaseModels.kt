@@ -10,6 +10,7 @@ import java.time.OffsetDateTime
 
 @Serializable
 data class ParticipantDto(
+    @SerialName("room_id") val roomId: String = "",
     @SerialName("user_id") val userId: String,
     val name: String = "",
     @SerialName("is_ready") val isReady: Boolean = false,

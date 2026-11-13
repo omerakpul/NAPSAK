@@ -131,6 +131,7 @@ class SupabaseRoomFlowTest {
 
             // realtime: host sees the guest become ready
             step("joined")
+            assertEquals("guest can resume the lobby", roomId, guest.findResumableRoomId())
             val guestId = joined.participants.keys.first { it != created.hostId }
             guest.setParticipantReady(roomId, guestId, true).getOrThrow()
             val ready = host.observeRoom(roomId).await("host sees guest ready") { r -> r?.participants?.get(guestId)?.isReady == true }
@@ -154,6 +155,8 @@ class SupabaseRoomFlowTest {
             assertEquals(2, allVoted.choices["a"]?.voteCount)
             assertEquals(1, allVoted.choices["b"]?.voteCount)
 
+            assertNull("a finished voter has nothing to resume", host.findResumableRoomId())
+
             // end: guest cannot, host can; both see the same winner
             assertTrue(guest.endVotingAndSetWinner(roomId, "a").isFailure)
             assertEquals("a", host.endVotingAndSetWinner(roomId, "a").getOrThrow())
@@ -166,6 +169,7 @@ class SupabaseRoomFlowTest {
             assertNotNull(afterLeave)
             host.deleteRoom(roomId).getOrThrow()
             assertNull(host.observeRoom(roomId).await("room deleted") { it == null })
+            assertNull(host.findResumableRoomId())
         }
     }
 }

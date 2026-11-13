@@ -24,7 +24,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.napsak.app.domain.model.RoomState
 import com.napsak.app.ui.theme.AmberSecondary
 import com.napsak.app.ui.theme.CoralPrimary
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
+import android.widget.Toast
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.asImageBitmap
+import com.napsak.app.ui.qrBitmap
+import com.napsak.app.ui.roomLink
 import androidx.compose.ui.platform.LocalContext
 import coil3.compose.AsyncImage
 
@@ -134,6 +143,17 @@ fun LobbyScreen(
                             fontWeight = FontWeight.Black,
                             color = MaterialTheme.colorScheme.onSurface,
                             letterSpacing = 4.sp
+                        ),
+                        modifier = Modifier.clickable {
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(ClipData.newPlainText("Oda Kodu", roomId))
+                            Toast.makeText(context, "Oda kodu kopyalandı", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                    Text(
+                        text = "Kopyalamak için koda dokun",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                         )
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -141,7 +161,7 @@ fun LobbyScreen(
                         onClick = {
                             val sendIntent = Intent().apply {
                                 action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_TEXT, "N'APSAK? Odamıza katıl!\nLink: https://omerakpul.github.io/NAPSAK/?room=$roomId\nOda Kodu: $roomId")
+                                putExtra(Intent.EXTRA_TEXT, "N'APSAK? Odamıza katıl!\nLink: ${roomLink(roomId)}\nOda Kodu: $roomId")
                                 type = "text/plain"
                             }
                             val shareIntent = Intent.createChooser(sendIntent, null)
@@ -182,8 +202,9 @@ fun LobbyScreen(
                             modifier = Modifier.fillMaxSize().padding(8.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            AsyncImage(
-                                model = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://omerakpul.github.io/NAPSAK/?room=$roomId",
+                            val qr = remember(roomId) { qrBitmap(roomLink(roomId)).asImageBitmap() }
+                            Image(
+                                bitmap = qr,
                                 contentDescription = "QR Code",
                                 modifier = Modifier.fillMaxSize()
                             )

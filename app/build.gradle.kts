@@ -91,6 +91,9 @@ dependencies {
     implementation(libs.supabase.storage)
     implementation(libs.ktor.client.okhttp)
 
+    // QR code generation (on device, no third-party service)
+    implementation(libs.zxing.core)
+
     // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
 
