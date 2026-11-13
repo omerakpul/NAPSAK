@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="style.css?v=1.0.3">
+    <link rel="stylesheet" href="style.css?v=1.1.0">
     
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -69,6 +69,16 @@
                 </div>
             </div>
             
+            <div id="suggest-card" class="card glass suggest-card">
+                <h3>Bir seçenek öner</h3>
+                <p class="suggest-hint">Önerin oda sahibine iletilir (en fazla 5).</p>
+                <div class="input-group">
+                    <input type="text" id="input-suggest" placeholder="Örn: Sushi Bar" maxlength="100" autocomplete="off">
+                </div>
+                <button id="btn-suggest" class="btn-secondary">Öneriyi Gönder</button>
+                <div id="my-suggestions" class="my-suggestions"></div>
+            </div>
+
             <div class="action-footer">
                 <button id="btn-ready" class="btn-secondary">Hazır Durumuna Geç <i class="fa-solid fa-circle-check"></i></button>
                 <p class="waiting-message"><i class="fa-solid fa-spinner fa-spin"></i> Oda sahibinin oylamayı başlatması bekleniyor...</p>
@@ -95,6 +105,13 @@
                 <!-- Swipeable cards will be injected dynamically -->
             </div>
             
+            <!-- SINGLE / RANK voting: a list instead of swipe cards -->
+            <div id="list-voting" class="list-voting hidden">
+                <p id="list-voting-hint" class="list-voting-hint"></p>
+                <div id="list-voting-items" class="list-voting-items"></div>
+                <button id="btn-submit-list" class="btn-primary">Oyumu Gönder</button>
+            </div>
+
             <!-- Fallback indicator when all cards are swiped -->
             <div id="voting-finished-placeholder" class="voting-finished-card glass hidden">
                 <div class="finished-content">
@@ -127,13 +144,14 @@
                 <div class="winner-info">
                     <div class="winner-header-row">
                         <h2 id="winner-name">Restoran Adı</h2>
-                        <span id="winner-votes-badge" class="winner-votes-badge-inline"><i class="fa-solid fa-fire"></i> <span id="winner-votes">0</span> Oy</span>
+                        <span id="winner-votes-badge" class="winner-votes-badge-inline"><i class="fa-solid fa-fire"></i> <span id="winner-votes">0</span> <span id="winner-unit">Oy</span></span>
                     </div>
                     <p id="winner-details">Açıklama ve detaylar buraya gelecek.</p>
                 </div>
             </div>
             
             <div class="action-footer">
+                <button id="btn-share" class="btn-secondary">Sonucu Paylaş <i class="fa-solid fa-share-nodes"></i></button>
                 <a id="btn-maps" class="btn-primary maps-link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-map-location-dot"></i> Haritada Aç</a>
                 <button id="btn-reset" class="btn-text">Ana Sayfaya Dön</button>
             </div>
@@ -141,6 +159,6 @@
     </div>
     
     <!-- Application Logic -->
-    <script src="app.js?v=2.0.1"></script>
+    <script src="app.js?v=2.1.0"></script>
 </body>
 </html>

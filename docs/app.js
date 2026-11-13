@@ -183,10 +183,11 @@ btnReady.addEventListener("click", () => {
 
 // Load the whole room in the shape the UI expects (participants/choices keyed by id)
 async function fetchRoomData() {
-    const [r, p, c] = await Promise.all([
+    const [r, p, c, sg] = await Promise.all([
         sb.from("rooms").select("*").eq("id", roomId).maybeSingle(),
         sb.from("participants").select("*").eq("room_id", roomId),
-        sb.from("choices").select("*").eq("room_id", roomId).order("position")
+        sb.from("choices").select("*").eq("room_id", roomId).order("position"),
+        sb.from("suggestions").select("*").eq("room_id", roomId).order("created_at")
     ]);
     if (r.error) throw r.error;
     if (!r.data) return null;
@@ -201,9 +202,11 @@ async function fetchRoomData() {
             voteCount: x.vote_count, latitude: x.latitude, longitude: x.longitude, category: x.category
         };
     });
+    const suggestions = (sg.data || []).map(x => ({ id: x.id, name: x.name, details: x.details, userId: x.user_id }));
     return {
         id: r.data.id, hostId: r.data.host_id, state: r.data.state,
-        winnerChoiceId: r.data.winner_choice_id, participants, choices
+        winnerChoiceId: r.data.winner_choice_id, voteMode: r.data.vote_mode || "LIKE",
+        participants, choices, suggestions
     };
 }
 
@@ -227,7 +230,7 @@ async function refreshRoom() {
 // Observe Room updates in Realtime (events only trigger a re-read; a slow poll covers missed events)
 function observeRoom() {
     roomChannel = sb.channel("room-" + roomId);
-    [["rooms", "id"], ["participants", "room_id"], ["choices", "room_id"]].forEach(([table, col]) => {
+    [["rooms", "id"], ["participants", "room_id"], ["choices", "room_id"], ["suggestions", "room_id"]].forEach(([table, col]) => {
         roomChannel.on("postgres_changes",
             { event: "*", schema: "public", table, filter: `${col}=eq.${roomId}` },
             () => refreshRoom());
@@ -281,6 +284,79 @@ function onRoomData(data) {
     handleRoomStateChange();
 }
 
+// ---- Option emoji (default visual for options without a photo) ----
+const EMOJI_KEYWORDS = [
+    ["pizza", "🍕"], ["burger", "🍔"], ["hamburger", "🍔"], ["kebap", "🥙"], ["döner", "🥙"], ["sushi", "🍣"],
+    ["makarna", "🍝"], ["kahve", "☕"], ["coffee", "☕"], ["starbucks", "☕"], ["çay", "🍵"], ["tatlı", "🍰"],
+    ["dondurma", "🍦"], ["balık", "🐟"], ["salata", "🥗"], ["sinema", "🎬"], ["film", "🍿"], ["bowling", "🎳"],
+    ["konser", "🎵"], ["müzik", "🎵"], ["tiyatro", "🎭"], ["karaoke", "🎤"], ["bilardo", "🎱"], ["dart", "🎯"],
+    ["playstation", "🎮"], ["oyun", "🎮"], ["park", "🌳"], ["piknik", "🧺"], ["plaj", "🏖️"], ["deniz", "🌊"],
+    ["dağ", "⛰️"], ["kamp", "⛺"], ["alışveriş", "🛍️"], ["futbol", "⚽"], ["basketbol", "🏀"], ["yüzme", "🏊"],
+    ["kitap", "📚"], ["bar", "🍻"], ["bira", "🍻"], ["restoran", "🍽️"], ["ev", "🏠"], ["tatil", "✈️"]
+];
+const CATEGORY_EMOJI = { "yemek": "🍔", "aktivite": "🎬", "film": "🍿", "eğlence": "🎮", "kahve": "☕" };
+const FALLBACK_EMOJI = ["🎯", "⭐", "🎲", "🍀", "🎁", "🔥", "🌈", "🏈"];
+
+function emojiFor(choice) {
+    const name = (choice.name || "").toLowerCase();
+    const tokens = name.split(/[ \-/,.]+/);
+    for (const [word, emoji] of EMOJI_KEYWORDS) {
+        if (tokens.some(t => t.startsWith(word))) return emoji;
+    }
+    const byCategory = CATEGORY_EMOJI[(choice.category || "").toLowerCase()];
+    if (byCategory) return byCategory;
+    let hash = 0;
+    for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+    return FALLBACK_EMOJI[hash % FALLBACK_EMOJI.length];
+}
+
+function votingMode() {
+    return (roomData && roomData.voteMode) || "LIKE";
+}
+
+// ---- Suggestions (lobby): propose an option to the host ----
+const inputSuggest = document.getElementById("input-suggest");
+const btnSuggest = document.getElementById("btn-suggest");
+const mySuggestions = document.getElementById("my-suggestions");
+
+btnSuggest.addEventListener("click", () => {
+    const name = inputSuggest.value.trim();
+    if (!name) return;
+    btnSuggest.disabled = true;
+    sb.rpc("suggest_choice", { p_room: roomId, p_name: name, p_details: "" }).then(({ error }) => {
+        btnSuggest.disabled = false;
+        if (error) {
+            const msg = (error.message || "").toLowerCase();
+            if (msg.includes("limit")) alert("En fazla 5 öneri gönderebilirsin.");
+            else alert("Öneri gönderilemedi. Oylama başlamış olabilir.");
+            return;
+        }
+        inputSuggest.value = "";
+        refreshRoom();
+    });
+});
+
+function renderMySuggestions() {
+    const mine = (roomData.suggestions || []).filter(x => x.userId === userId);
+    mySuggestions.innerHTML = "";
+    mine.forEach(sug => {
+        const row = document.createElement("div");
+        row.className = "my-suggestion";
+        const label = document.createElement("span");
+        label.textContent = sug.name;
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.title = "Önerimi geri çek";
+        remove.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+        remove.addEventListener("click", () => {
+            sb.rpc("dismiss_suggestion", { p_room: roomId, p_id: sug.id }).then(() => refreshRoom());
+        });
+        row.append(label, remove);
+        mySuggestions.appendChild(row);
+    });
+    btnSuggest.disabled = mine.length >= 5;
+}
+
 // Handle Room State Navigation
 function handleRoomStateChange() {
     const state = roomData.state || "WAITING";
@@ -288,6 +364,7 @@ function handleRoomStateChange() {
     if (state === "WAITING") {
         showScreen(screenLobby);
         updateLobbyUI();
+        renderMySuggestions();
     } else if (state === "VOTING") {
         if (!screenVoting.classList.contains("active")) {
             showScreen(screenVoting);
@@ -376,8 +453,10 @@ function initVotingScreen() {
         });
     }
 
-    // Sort choices to ensure consistency across devices
-    choicesList.sort((a, b) => a.id.localeCompare(b.id));
+    // LIKE: sort for a consistent card order across devices. SINGLE/RANK keep the host's order.
+    if (votingMode() === "LIKE") {
+        choicesList.sort((a, b) => a.id.localeCompare(b.id));
+    }
 
     // Check if current user has already voted
     const currentUser = roomData.participants ? roomData.participants[userId] : null;
@@ -389,6 +468,12 @@ function initVotingScreen() {
     }
 
     updateVotingProgress();
+
+    // SINGLE / RANK: show a list instead of swipe cards (no countdown)
+    if (votingMode() !== "LIKE" && currentCardIndex < choicesList.length) {
+        initListVoting();
+        return;
+    }
 
     // Start timer interval if not already started
     if (!timerInterval && choicesList.length > 0) {
@@ -426,6 +511,96 @@ function initVotingScreen() {
 
     // Render cards
     renderCardsStack();
+}
+
+const listVoting = document.getElementById("list-voting");
+const listVotingItems = document.getElementById("list-voting-items");
+const btnSubmitList = document.getElementById("btn-submit-list");
+
+function initListVoting() {
+    const mode = votingMode();
+    const byId = {};
+    choicesList.forEach(c => { byId[c.id] = c; });
+    let order = choicesList.map(c => c.id);
+    let selectedId = null;
+
+    cardContainer.innerHTML = "";
+    votingActions.classList.add("hidden");
+    document.querySelector(".progress-bar-container").classList.add("hidden");
+    document.getElementById("voting-timer").classList.add("hidden");
+    listVoting.classList.remove("hidden");
+    document.getElementById("list-voting-hint").textContent = mode === "SINGLE"
+        ? "En çok istediğin seçeneği işaretle."
+        : "Seçenekleri sırala: en iyi en üstte olsun.";
+    btnSubmitList.textContent = mode === "SINGLE" ? "Oyumu Gönder" : "Sıralamayı Gönder";
+    btnSubmitList.disabled = mode === "SINGLE";
+
+    function render() {
+        listVotingItems.innerHTML = "";
+        order.forEach((id, index) => {
+            const choice = byId[id];
+            const row = document.createElement("div");
+            row.className = "list-vote-item" + (mode === "SINGLE" && id === selectedId ? " selected" : "");
+
+            if (mode === "RANK") {
+                const badge = document.createElement("span");
+                badge.className = "rank-badge";
+                badge.textContent = String(index + 1);
+                row.appendChild(badge);
+            }
+            const emoji = document.createElement("span");
+            emoji.className = "lv-emoji";
+            emoji.textContent = emojiFor(choice);
+            const text = document.createElement("div");
+            text.className = "lv-text";
+            const title = document.createElement("strong");
+            title.textContent = choice.name;
+            const details = document.createElement("small");
+            details.textContent = choice.details || "";
+            text.append(title, details);
+            row.append(emoji, text);
+
+            if (mode === "SINGLE") {
+                const radio = document.createElement("span");
+                radio.className = "lv-radio";
+                row.appendChild(radio);
+                row.addEventListener("click", () => {
+                    selectedId = id;
+                    btnSubmitList.disabled = false;
+                    render();
+                });
+            } else {
+                const controls = document.createElement("div");
+                controls.className = "rank-controls";
+                const up = document.createElement("button");
+                up.type = "button";
+                up.innerHTML = '<i class="fa-solid fa-chevron-up"></i>';
+                up.disabled = index === 0;
+                up.addEventListener("click", () => { order.splice(index - 1, 0, order.splice(index, 1)[0]); render(); });
+                const down = document.createElement("button");
+                down.type = "button";
+                down.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
+                down.disabled = index === order.length - 1;
+                down.addEventListener("click", () => { order.splice(index + 1, 0, order.splice(index, 1)[0]); render(); });
+                controls.append(up, down);
+                row.appendChild(controls);
+            }
+            listVotingItems.appendChild(row);
+        });
+    }
+    render();
+
+    btnSubmitList.onclick = () => {
+        if (mode === "SINGLE") {
+            if (!selectedId) return;
+            likedChoiceIds = [selectedId];
+        } else {
+            likedChoiceIds = order.slice();
+        }
+        currentCardIndex = choicesList.length;
+        listVoting.classList.add("hidden");
+        showVotingFinished();
+    };
 }
 
 function updateVotingProgress() {
@@ -691,6 +866,7 @@ function showVotingFinished() {
 
     cardContainer.innerHTML = "";
     votingActions.classList.add("hidden");
+    listVoting.classList.add("hidden");
     votingFinishedPlaceholder.classList.remove("hidden");
     
     // Submit votes once
@@ -820,6 +996,7 @@ function renderWinnerCard(winner) {
     winnerName.textContent = winner.name;
     winnerDetails.textContent = winner.details || "Açıklama bulunmuyor.";
     winnerVotes.textContent = winner.voteCount || 0;
+    document.getElementById("winner-unit").textContent = votingMode() === "RANK" ? "Puan" : "Oy";
     
     const hasImage = winner.imageUrl && winner.imageUrl.trim() !== "" && winner.imageUrl !== "null" && winner.imageUrl !== "undefined";
     
@@ -919,4 +1096,19 @@ window.addEventListener("error", (e) => {
 });
 window.addEventListener("unhandledrejection", (e) => {
     console.error("Unhandled promise rejection:", e.reason);
+});
+
+
+// Share the result (native share sheet where available, clipboard otherwise)
+document.getElementById("btn-share").addEventListener("click", async () => {
+    const winner = roomData && roomData.choices ? roomData.choices[roomData.winnerChoiceId] : null;
+    if (!winner) return;
+    const url = window.location.origin + window.location.pathname;
+    const text = `N’APSAK? ile karar verdik: ${winner.name} kazandı! ${emojiFor(winner)}`;
+    if (navigator.share) {
+        try { await navigator.share({ title: "N’APSAK?", text, url }); } catch (e) { /* cancelled */ }
+    } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text + " " + url);
+        alert("Sonuç panoya kopyalandı!");
+    }
 });
