@@ -235,7 +235,7 @@ fun EditListScreen(
                             if (isUploadingListImage) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(16.dp),
-                                    color = CoralPrimary,
+                                    color = MaterialTheme.colorScheme.primary,
                                     strokeWidth = 2.dp
                                 )
                             } else if (listImageUrl.isNotBlank()) {
@@ -278,7 +278,7 @@ fun EditListScreen(
                                 text = "Yeni Seçenek Ekle",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = CoralPrimary
+                                color = MaterialTheme.colorScheme.primary
                             )
 
                             OutlinedTextField(
@@ -423,7 +423,7 @@ fun EditListScreen(
                                 if (isUploadingThisChoice) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(20.dp),
-                                        color = CoralPrimary,
+                                        color = MaterialTheme.colorScheme.primary,
                                         strokeWidth = 2.dp
                                     )
                                 } else if (hasImage) {
@@ -489,7 +489,7 @@ fun EditListScreen(
 
                             IconButton(
                                 onClick = { editingChoices.remove(choice) },
-                                modifier = Modifier.size(36.dp)
+                                modifier = Modifier.size(48.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Close,

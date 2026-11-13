@@ -176,9 +176,19 @@ fun HomeScreen(
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Button(onClick = { onNavigateToLobby(roomId) }) { Text("Odaya Dön") }
-                                    TextButton(onClick = { viewModel.leaveResumableRoom(roomId) }) { Text("Odadan Ayrıl") }
+                                // stacked so large font sizes cannot squeeze the labels
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Button(
+                                        onClick = { onNavigateToLobby(roomId) },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) { Text("Odaya Dön") }
+                                    TextButton(
+                                        onClick = { viewModel.leaveResumableRoom(roomId) },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) { Text("Odadan Ayrıl") }
                                 }
                             }
                         }

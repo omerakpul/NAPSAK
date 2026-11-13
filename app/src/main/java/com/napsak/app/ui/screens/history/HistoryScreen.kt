@@ -1,5 +1,7 @@
 package com.napsak.app.ui.screens.history
 
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -80,7 +82,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                     color = MaterialTheme.colorScheme.primary,
                     letterSpacing = 2.sp
                 ),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).semantics { heading() }
             )
             if (entries.isNotEmpty()) {
                 TextButton(onClick = { confirmClear = true }) { Text("Tümünü sil") }
