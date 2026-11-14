@@ -17,6 +17,7 @@ The project has a native **Android client** (Jetpack Compose, Clean Architecture
 * **Voting:** swipe or tap, undo the previous card, haptic feedback, countdown, live progress; the host can close voting if someone is idle.
 * **Building the option list:** pick templates, paste a list (one option per line, `Name - details`), search a place on the map (OpenStreetMap Nominatim, no API key) that fills name, address and coordinates, or accept **suggestions** that participants send from the lobby (max 5 each, visible only to the host and the author).
 * **Result:** shareable image card of the winner (drawn on device), plus a private on-device **history** of past decisions (`Geçmiş` tab).
+* **Inputs:** one shared text field on Android (`NapsakTextField`: soft fill, animated focus ring, leading icon, clear button, character counter, helper and error text) and the same look on the web with inline validation instead of pop-ups; the vote mode is a segmented control on both.
 * **Look:** photo-less options get an emoji and accent colour from their name/category; light and dark themes.
 * **Image pipeline:** images are validated (10 MB source limit), downscaled to ≤1024 px and JPEG-compressed on device, then uploaded to a public Supabase Storage bucket (`choice-images`, 2 MB cap, owner-only write).
 * **Image retention:** uploaded images are intentionally not auto-deleted, because users' saved lists (stored on their device) keep referencing the URLs. Each file is ≤2 MB after compression, and an uploader can delete their own objects.

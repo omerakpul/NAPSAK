@@ -1,5 +1,7 @@
 package com.napsak.app.ui.screens.createchoices
 
+import androidx.compose.material.icons.filled.Info
+import com.napsak.app.ui.components.NapsakTextField
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.animation.*
@@ -355,49 +357,33 @@ fun CreateChoicesScreen(
                     modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedTextField(
+                    NapsakTextField(
                         value = uiState.currentName,
                         onValueChange = { viewModel.onNameChange(it) },
-                        label = { Text("Seçenek adı") },
-                        placeholder = { Text("ör: Starbucks, Sinema, Bowling...") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = CoralPrimary,
-                            focusedLabelColor = CoralPrimary,
-                            cursorColor = CoralPrimary
-                        )
+                        label = "Seçenek adı",
+                        leadingIcon = Icons.Default.Edit,
+                        placeholder = "ör: Starbucks, Sinema, Bowling...",
+                        modifier = Modifier.fillMaxWidth()
                     )
 
-                    OutlinedTextField(
+                    NapsakTextField(
                         value = uiState.currentDetails,
                         onValueChange = { viewModel.onDetailsChange(it) },
-                        label = { Text("Açıklama (isteğe bağlı)") },
-                        placeholder = { Text("Kısa bir not ekle...") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
+                        label = "Açıklama (isteğe bağlı)",
+                        leadingIcon = Icons.Default.Info,
+                        placeholder = "Kısa bir not ekle...",
+                        singleLine = false,
                         maxLines = 2,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = CoralPrimary,
-                            focusedLabelColor = CoralPrimary,
-                            cursorColor = CoralPrimary
-                        )
+                        modifier = Modifier.fillMaxWidth()
                     )
 
-                    OutlinedTextField(
+                    NapsakTextField(
                         value = uiState.currentCategory,
                         onValueChange = { viewModel.onCategoryChange(it) },
-                        label = { Text("Kategori (isteğe bağlı)") },
-                        placeholder = { Text("ör: Yemek, Aktivite, Tatlılar...") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = CoralPrimary,
-                            focusedLabelColor = CoralPrimary,
-                            cursorColor = CoralPrimary
-                        )
+                        label = "Kategori (isteğe bağlı)",
+                        leadingIcon = Icons.Default.Label,
+                        placeholder = "ör: Yemek, Aktivite, Tatlılar...",
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     // Show existing categories in this room as suggestion chips
@@ -646,19 +632,17 @@ fun CreateChoicesScreen(
             title = { Text("Listeyi Şablon Olarak Kaydet") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
+                    NapsakTextField(
                         value = listNameInput,
                         onValueChange = { listNameInput = it },
-                        label = { Text("Liste Adı") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp)
+                        label = "Liste Adı",
+                        leadingIcon = Icons.Default.Edit
                     )
-                    OutlinedTextField(
+                    NapsakTextField(
                         value = listCategoryInput,
                         onValueChange = { listCategoryInput = it },
-                        label = { Text("Kategori") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp)
+                        label = "Kategori",
+                        leadingIcon = Icons.Default.Label
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(

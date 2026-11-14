@@ -1,5 +1,7 @@
 package com.napsak.app.ui.screens.createchoices
 
+import androidx.compose.material.icons.filled.Place
+import com.napsak.app.ui.components.NapsakTextField
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -33,7 +35,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -140,14 +144,15 @@ fun QuickEntryCard(
             }
             AnimatedVisibility(visible = expanded) {
                 Column(modifier = Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(
+                    NapsakTextField(
                         value = text,
                         onValueChange = onTextChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
+                        label = "Seçenekler (her satıra bir tane)",
+                        placeholder = "Pizza\nBurger - gurme hamburger\nSushi",
+                        singleLine = false,
                         minLines = 4,
                         maxLines = 10,
-                        placeholder = { Text("Pizza\nBurger - gurme hamburger\nSushi") }
+                        modifier = Modifier.fillMaxWidth()
                     )
                     Button(
                         onClick = {
@@ -211,16 +216,12 @@ fun PlaceSearchCard(
             }
             AnimatedVisibility(visible = expanded) {
                 Column(modifier = Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
+                    NapsakTextField(
                         value = query,
                         onValueChange = onQueryChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        singleLine = true,
-                        label = { Text("Mekan veya adres (ör: Kadıköy Starbucks)") },
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = { onSearch() }),
-                        trailingIcon = {
+                        label = "Mekan veya adres (ör: Kadıköy Starbucks)",
+                        leadingIcon = Icons.Default.Place,
+                        trailing = {
                             if (isSearching) {
                                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                             } else {
@@ -228,7 +229,10 @@ fun PlaceSearchCard(
                                     Icon(Icons.Default.Search, contentDescription = "Ara")
                                 }
                             }
-                        }
+                        },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { onSearch() }),
+                        modifier = Modifier.fillMaxWidth()
                     )
                     if (failed) {
                         Text(
@@ -311,9 +315,22 @@ fun StickyStartBar(
             modifier = Modifier.navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                VoteMode.entries.forEach { m ->
-                    FilterChip(selected = mode == m, onClick = { onModeChange(m) }, label = { Text(m.label()) })
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                VoteMode.entries.forEachIndexed { index, m ->
+                    SegmentedButton(
+                        selected = mode == m,
+                        onClick = { onModeChange(m) },
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = VoteMode.entries.size),
+                        colors = SegmentedButtonDefaults.colors(
+                            activeContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                            activeContentColor = MaterialTheme.colorScheme.primary,
+                            activeBorderColor = MaterialTheme.colorScheme.primary,
+                            inactiveContainerColor = Color.Transparent,
+                            inactiveContentColor = MaterialTheme.colorScheme.onSurface,
+                            inactiveBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
+                        ),
+                        label = { Text(m.label()) }
+                    )
                 }
             }
             Text(

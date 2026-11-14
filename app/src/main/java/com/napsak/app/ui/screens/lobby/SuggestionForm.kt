@@ -1,5 +1,8 @@
 package com.napsak.app.ui.screens.lobby
 
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
+import com.napsak.app.ui.components.NapsakTextField
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,23 +55,21 @@ fun SuggestionForm(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
-            OutlinedTextField(
+            NapsakTextField(
                 value = name,
                 onValueChange = { name = it.take(100); failed = false },
-                label = { Text("Seçenek adı") },
-                singleLine = true,
-                enabled = !limitReached,
+                label = "Seçenek adı",
+                leadingIcon = Icons.Default.Edit,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                enabled = !limitReached
             )
-            OutlinedTextField(
+            NapsakTextField(
                 value = details,
                 onValueChange = { details = it.take(500) },
-                label = { Text("Açıklama (isteğe bağlı)") },
-                singleLine = true,
-                enabled = !limitReached,
+                label = "Açıklama (isteğe bağlı)",
+                leadingIcon = Icons.Default.Info,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                enabled = !limitReached
             )
             Button(
                 onClick = {
