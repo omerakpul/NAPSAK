@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="style.css?v=1.2.0">
+    <link rel="stylesheet" href="style.css?v=1.3.0">
     
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -45,13 +45,23 @@
             <div class="card glass">
                 <h2>Odaya Katıl</h2>
                 <div class="input-group">
-                    <label for="input-name"><i class="fa-solid fa-user"></i> Adın</label>
-                    <input type="text" id="input-name" placeholder="Örn: Ahmet" autocomplete="off" maxlength="15">
+                    <label for="input-name">Adın</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-user field-icon" aria-hidden="true"></i>
+                        <input type="text" id="input-name" placeholder="Örn: Ahmet" autocomplete="off" maxlength="15" aria-describedby="err-name">
+                        <button type="button" class="field-clear hidden" aria-label="Temizle"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                    </div>
+                    <div class="field-meta"><span class="field-error" id="err-name" role="alert"></span><span class="counter"></span></div>
                 </div>
                 
                 <div class="input-group">
-                    <label for="input-room"><i class="fa-solid fa-key"></i> Oda Kodu</label>
-                    <input type="tel" id="input-room" placeholder="6 Haneli Kod" autocomplete="off" maxlength="6">
+                    <label for="input-room">Oda Kodu</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-key field-icon" aria-hidden="true"></i>
+                        <input type="tel" id="input-room" inputmode="numeric" placeholder="6 Haneli Kod" autocomplete="off" maxlength="6" aria-describedby="err-room">
+                        <button type="button" class="field-clear hidden" aria-label="Temizle"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                    </div>
+                    <div class="field-meta"><span class="field-error" id="err-room" role="alert"></span><span class="counter"></span></div>
                 </div>
                 
                 <button id="btn-join" class="btn-primary">Katıl <i class="fa-solid fa-right-to-bracket"></i></button>
@@ -97,7 +107,13 @@
                 <h3>Bir seçenek öner</h3>
                 <p class="suggest-hint">Önerin oda sahibine iletilir (en fazla 5).</p>
                 <div class="input-group">
-                    <input type="text" id="input-suggest" placeholder="Örn: Sushi Bar" maxlength="100" autocomplete="off">
+                    <label for="input-suggest">Seçenek adı</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-pen field-icon" aria-hidden="true"></i>
+                        <input type="text" id="input-suggest" placeholder="Örn: Sushi Bar" maxlength="100" autocomplete="off">
+                        <button type="button" class="field-clear hidden" aria-label="Temizle"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                    </div>
+                    <div class="field-meta"><span class="field-error" role="alert"></span><span class="counter"></span></div>
                 </div>
                 <button id="btn-suggest" class="btn-secondary">Öneriyi Gönder</button>
                 <div id="my-suggestions" class="my-suggestions"></div>
@@ -126,7 +142,12 @@
                 <div id="setup-templates" class="chip-row"></div>
                 <h3 class="setup-sub">Toplu ekle</h3>
                 <p class="suggest-hint">Her satıra bir seçenek yaz. İstersen <b>Ad - açıklama</b> biçimini kullan.</p>
-                <textarea id="setup-bulk" class="setup-textarea" rows="4" placeholder="Pizza&#10;Burger - gurme hamburger&#10;Sushi"></textarea>
+                <div class="input-group">
+                    <label for="setup-bulk">Seçenekler (her satıra bir tane)</label>
+                    <div class="input-wrap">
+                        <textarea id="setup-bulk" class="setup-textarea" rows="4" placeholder="Pizza&#10;Burger - gurme hamburger&#10;Sushi"></textarea>
+                    </div>
+                </div>
                 <button id="btn-setup-add" class="btn-secondary" type="button">Satırları Ekle <i class="fa-solid fa-plus"></i></button>
             </div>
 
@@ -137,7 +158,7 @@
 
             <div class="card glass">
                 <h3>Oylama şekli</h3>
-                <div id="setup-modes" class="chip-row" role="radiogroup" aria-label="Oylama şekli"></div>
+                <div id="setup-modes" class="segmented" role="radiogroup" aria-label="Oylama şekli"></div>
                 <p id="setup-mode-hint" class="suggest-hint"></p>
             </div>
 
@@ -230,7 +251,7 @@
     </div>
     
     <!-- Application Logic -->
-    <script src="app.js?v=2.2.0"></script>
-    <script src="host.js?v=2.2.0"></script>
+    <script src="app.js?v=2.3.0"></script>
+    <script src="host.js?v=2.3.0"></script>
 </body>
 </html>

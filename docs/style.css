@@ -158,38 +158,93 @@ h2 {
 }
 
 .input-group {
-    margin-bottom: 20px;
+    margin-bottom: 18px;
     display: flex;
     flex-direction: column;
 }
 
 .input-group label {
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     color: var(--text-secondary);
     margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
 
-.input-group input {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--surface-border);
-    border-radius: 14px;
-    padding: 14px 16px;
+.input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.field-icon {
+    position: absolute;
+    left: 16px;
+    color: var(--text-muted);
+    pointer-events: none;
+    transition: color 0.2s ease;
+}
+
+.input-wrap:focus-within .field-icon { color: var(--primary); }
+
+.input-group input,
+.input-group textarea {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 2px solid transparent;
+    border-radius: 16px;
+    padding: 15px 48px 15px 46px;
+    min-height: 54px;
     color: var(--text-primary);
     font-size: 16px;
     font-weight: 500;
-    transition: all 0.25s ease;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
-.input-group input:focus {
+.input-group textarea { padding: 14px 16px; min-height: 110px; resize: vertical; line-height: 1.5; }
+.input-group input::placeholder,
+.input-group textarea::placeholder { color: var(--text-muted); font-weight: 400; }
+
+.input-group input:focus,
+.input-group textarea:focus {
     outline: none;
     border-color: var(--primary);
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 0 0 3px var(--primary-glow);
+    background: rgba(255, 255, 255, 0.09);
+    box-shadow: 0 0 0 4px var(--primary-glow);
 }
+
+.input-group.has-error input,
+.input-group.has-error textarea {
+    border-color: var(--danger);
+    background: rgba(239, 68, 68, 0.08);
+    box-shadow: 0 0 0 4px var(--danger-glow);
+}
+.input-group.has-error .field-icon { color: var(--danger); }
+
+.field-clear {
+    position: absolute;
+    right: 4px;
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    border-radius: 12px;
+    font-size: 16px;
+    cursor: pointer;
+}
+.field-clear:hover { color: var(--text-primary); }
+
+.field-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 20px;
+    padding: 6px 4px 0;
+    font-size: 12px;
+}
+.field-error { color: #FCA5A5; font-weight: 600; }
+.counter { color: var(--text-muted); margin-left: auto; }
 
 /* Buttons */
 .btn-primary {
@@ -951,8 +1006,7 @@ h2 {
 .chip { background: rgba(255, 255, 255, 0.08); border: 1px solid var(--surface-border); color: var(--text-primary);
     border-radius: 999px; padding: 10px 16px; min-height: 44px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .chip[aria-checked="true"], .chip.selected { background: var(--gradient); border-color: transparent; }
-.setup-textarea { width: 100%; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--surface-border);
-    border-radius: 14px; color: var(--text-primary); padding: 12px; font-size: 15px; resize: vertical; }
+.setup-textarea { width: 100%; }
 .setup-list { display: flex; flex-direction: column; gap: 8px; }
 .setup-item { display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.05);
     border-radius: 12px; padding: 8px 10px; }
@@ -975,3 +1029,11 @@ h2 {
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+
+/* ---- Segmented control (vote mode) ---- */
+.segmented { display: flex; gap: 4px; padding: 4px; background: rgba(255, 255, 255, 0.06); border-radius: 16px; }
+.segmented .chip { flex: 1; border: none; border-radius: 12px; background: transparent; padding: 12px 8px;
+    color: var(--text-secondary); transition: background 0.2s ease, color 0.2s ease; }
+.segmented .chip.selected, .segmented .chip[aria-checked="true"] { background: var(--gradient); color: #fff;
+    box-shadow: 0 2px 12px var(--primary-glow); }

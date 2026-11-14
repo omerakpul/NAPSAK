@@ -74,9 +74,9 @@ function validName(name) {
 
 btnCreateRoom.addEventListener("click", async () => {
     userName = inputName.value.trim();
-    if (!userName) { alert("Lütfen adınızı girin!"); return; }
+    if (!userName) { setFieldError(inputName, "Lütfen adını yaz."); return; }
     if (!validName(userName)) {
-        alert("Lütfen sadece harf, rakam ve boşluk içeren geçerli bir isim girin (en fazla 15 karakter)!");
+        setFieldError(inputName, "Sadece harf, rakam ve boşluk kullan (en fazla 15 karakter).");
         return;
     }
     localStorage.setItem("napsak_user_name", userName);

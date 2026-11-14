@@ -1,5 +1,7 @@
 package com.napsak.app.ui.screens.home
 
+import androidx.compose.material.icons.filled.Key
+import com.napsak.app.ui.components.NapsakTextField
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -60,6 +62,7 @@ fun HomeScreen(
     var roomCode by remember(initialRoomCode) { mutableStateOf(initialRoomCode.orEmpty()) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var errorIsForJoin by remember { mutableStateOf(false) }
     val resumableRoomId by viewModel.resumableRoomId.collectAsState()
 
     LaunchedEffect(Unit) { viewModel.refreshResumableRoom() }
@@ -135,28 +138,17 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    OutlinedTextField(
+                    NapsakTextField(
                         value = name,
                         onValueChange = { input ->
                             if (input.length <= 15) {
                                 name = input.filter { it.isLetterOrDigit() || it.isWhitespace() }
                             }
                         },
-                        label = { Text("Takma Adınız") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "User Icon",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-                        )
+                        label = "Takma Adınız",
+                        maxLength = 15,
+                        leadingIcon = Icons.Default.Person,
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -212,7 +204,7 @@ fun HomeScreen(
                                             isLoading = false
                                             result
                                                 .onSuccess { room -> onNavigateToLobby(room.id) }
-                                                .onFailure { errorMessage = friendly(it) }
+                                                .onFailure { errorMessage = friendly(it); errorIsForJoin = false }
                                         }
                                     }
                                 },
@@ -269,21 +261,18 @@ fun HomeScreen(
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            OutlinedTextField(
+                            NapsakTextField(
                                 value = roomCode,
                                 onValueChange = {
                                     roomCode = it.filter(Char::isDigit).take(6)
                                     errorMessage = null
                                 },
-                                label = { Text("Oda Kodu (6 haneli)") },
-                                singleLine = true,
+                                label = "Oda Kodu (6 haneli)",
+                                helperText = "Arkadaşının paylaştığı 6 haneli kod",
+                                errorText = errorMessage.takeIf { errorIsForJoin },
+                                leadingIcon = Icons.Default.Key,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-                                )
+                                modifier = Modifier.fillMaxWidth()
                             )
 
                             Spacer(modifier = Modifier.height(16.dp))
@@ -297,7 +286,7 @@ fun HomeScreen(
                                             isLoading = false
                                             result
                                                 .onSuccess { room -> onNavigateToLobby(room.id) }
-                                                .onFailure { errorMessage = friendly(it) }
+                                                .onFailure { errorMessage = friendly(it); errorIsForJoin = true }
                                         }
                                     }
                                 },
@@ -328,7 +317,7 @@ fun HomeScreen(
                                 }
                             }
 
-                            errorMessage?.let { message ->
+                            errorMessage?.takeIf { !errorIsForJoin }?.let { message ->
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Text(
                                     text = message,

@@ -1,5 +1,8 @@
 package com.napsak.app.ui.screens.lists
 
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
+import com.napsak.app.ui.components.NapsakTextField
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -186,32 +189,20 @@ fun EditListScreen(
             ) {
                 item {
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
+                    NapsakTextField(
                         value = listNameInput,
                         onValueChange = { listNameInput = it },
-                        label = { Text("Liste Adı (Örn: Kahve, Yemek)") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = CoralPrimary,
-                            focusedLabelColor = CoralPrimary,
-                            cursorColor = CoralPrimary
-                        )
+                        label = "Liste Adı (Örn: Kahve, Yemek)",
+                        leadingIcon = Icons.Default.Edit,
+                        modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
+                    NapsakTextField(
                         value = listCategoryInput,
                         onValueChange = { listCategoryInput = it },
-                        label = { Text("Liste Kategorisi (Örn: Yemek, Aktivite, Film)") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = CoralPrimary,
-                            focusedLabelColor = CoralPrimary,
-                            cursorColor = CoralPrimary
-                        )
+                        label = "Liste Kategorisi (Örn: Yemek, Aktivite, Film)",
+                        leadingIcon = Icons.Default.Label,
+                        modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     // Compact List Cover Image Picker
@@ -281,32 +272,20 @@ fun EditListScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
 
-                            OutlinedTextField(
+                            NapsakTextField(
                                 value = newChoiceName,
                                 onValueChange = { newChoiceName = it },
-                                label = { Text("Seçenek Adı") },
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = CoralPrimary,
-                                    focusedLabelColor = CoralPrimary,
-                                    cursorColor = CoralPrimary
-                                )
+                                label = "Seçenek Adı",
+                                leadingIcon = Icons.Default.Edit,
+                                modifier = Modifier.fillMaxWidth()
                             )
 
-                            OutlinedTextField(
+                            NapsakTextField(
                                 value = newChoiceDetails,
                                 onValueChange = { newChoiceDetails = it },
-                                label = { Text("Açıklama (İsteğe bağlı)") },
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = CoralPrimary,
-                                    focusedLabelColor = CoralPrimary,
-                                    cursorColor = CoralPrimary
-                                )
+                                label = "Açıklama (İsteğe bağlı)",
+                                leadingIcon = Icons.Default.Info,
+                                modifier = Modifier.fillMaxWidth()
                             )
 
                             Button(

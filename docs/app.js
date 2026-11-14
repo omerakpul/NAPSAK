@@ -115,16 +115,16 @@ btnJoin.addEventListener("click", () => {
     roomId = inputRoom.value.trim();
 
     if (!userName) {
-        alert("Lütfen adınızı girin!");
+        setFieldError(inputName, "Lütfen adını yaz.");
         return;
     }
     const nameRegex = /^[a-zA-Z0-9çÇğĞıİöÖşŞüÜ\s]{1,15}$/;
     if (!nameRegex.test(userName)) {
-        alert("Lütfen sadece harf, rakam ve boşluk içeren geçerli bir isim girin (en fazla 15 karakter)!");
+        setFieldError(inputName, "Sadece harf, rakam ve boşluk kullan (en fazla 15 karakter).");
         return;
     }
     if (!roomId || roomId.length !== 6) {
-        alert("Lütfen 6 haneli oda kodunu girin!");
+        setFieldError(inputRoom, "6 haneli oda kodunu yaz.");
         return;
     }
 
@@ -141,9 +141,9 @@ btnJoin.addEventListener("click", () => {
         if (error) {
             console.error("Join room error:", error);
             const msg = (error.message || "").toLowerCase();
-            if (msg.includes("room not found")) alert("Oda bulunamadı! Lütfen kodu kontrol edin.");
-            else if (msg.includes("voting already started")) alert("Oylama başlamış, odaya girilemiyor.");
-            else if (msg.includes("room is full")) alert("Oda dolu!");
+            if (msg.includes("room not found")) setFieldError(inputRoom, "Oda bulunamadı. Kodu kontrol et.");
+            else if (msg.includes("voting already started")) setFieldError(inputRoom, "Oylama başlamış, odaya girilemiyor.");
+            else if (msg.includes("room is full")) setFieldError(inputRoom, "Oda dolu.");
             else alert("Bağlantı hatası oluştu!");
             resetJoinButton();
             return;
@@ -1149,3 +1149,51 @@ window.addEventListener("online", () => {
     if (roomId) refreshRoom(); // catch up on anything missed while offline
 });
 updateNetBanner();
+
+
+// ---- Form fields: clear button, character counter, inline errors ----
+function setFieldError(input, message) {
+    const group = input.closest(".input-group");
+    if (!group) { alert(message); return; }
+    group.classList.add("has-error");
+    const slot = group.querySelector(".field-error");
+    if (slot) slot.textContent = message;
+    input.setAttribute("aria-invalid", "true");
+    input.focus();
+}
+
+function clearFieldError(input) {
+    const group = input.closest(".input-group");
+    if (!group || !group.classList.contains("has-error")) return;
+    group.classList.remove("has-error");
+    const slot = group.querySelector(".field-error");
+    if (slot) slot.textContent = "";
+    input.removeAttribute("aria-invalid");
+}
+
+function enhanceInputs() {
+    document.querySelectorAll(".input-wrap").forEach(wrap => {
+        const input = wrap.querySelector("input, textarea");
+        if (!input) return;
+        const clear = wrap.querySelector(".field-clear");
+        const counter = wrap.parentElement.querySelector(".counter");
+        const refresh = () => {
+            if (clear) clear.classList.toggle("hidden", !(input.value && wrap.matches(":focus-within")));
+            if (counter && input.maxLength > 0) counter.textContent = input.value.length + "/" + input.maxLength;
+        };
+        input.addEventListener("input", () => { clearFieldError(input); refresh(); });
+        input.addEventListener("focus", refresh);
+        input.addEventListener("blur", () => setTimeout(refresh, 150));
+        if (clear) {
+            clear.addEventListener("mousedown", e => e.preventDefault()); // keep the focus in the field
+            clear.addEventListener("click", () => {
+                input.value = "";
+                input.dispatchEvent(new Event("input"));
+                input.focus();
+            });
+        }
+        refresh();
+    });
+}
+document.addEventListener("DOMContentLoaded", enhanceInputs);
+if (document.readyState !== "loading") enhanceInputs();
