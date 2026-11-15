@@ -3,7 +3,18 @@ package com.napsak.app
 import android.content.Intent
 import android.os.Bundle
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
@@ -69,95 +80,101 @@ class MainActivity : ComponentActivity() {
                 val sharedViewModel: SharedSessionViewModel = hiltViewModel()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
-                
-                val showBottomBar = currentDestination?.let { dest ->
-                    dest.hasRoute<Screen.Home>() || dest.hasRoute<Screen.Lists>() || dest.hasRoute<Screen.History>()
-                } ?: false
-                
+
+                val tabs = listOf(
+                    Triple("Ana Sayfa", Icons.Default.Home, Screen.Home as Screen),
+                    Triple("Listeler", Icons.Default.List, Screen.Lists as Screen),
+                    Triple("Geçmiş", Icons.Default.History, Screen.History as Screen)
+                )
+                fun isSelected(screen: Screen): Boolean = when (screen) {
+                    Screen.Home -> currentDestination?.hasRoute<Screen.Home>() == true
+                    Screen.Lists -> currentDestination?.hasRoute<Screen.Lists>() == true
+                    Screen.History -> currentDestination?.hasRoute<Screen.History>() == true
+                    else -> false
+                }
+                val openTab: (Screen) -> Unit = { screen ->
+                    navController.navigate(screen) {
+                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+                val showTabs = tabs.any { isSelected(it.third) }
+                // short windows (phones in landscape, split screen) get a side rail instead of a bottom bar
+                val useRail = LocalConfiguration.current.screenHeightDp < 500
+                val accent = MaterialTheme.colorScheme.primary
+                val muted = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
+                    containerColor = MaterialTheme.colorScheme.background,
                     bottomBar = {
-                        if (showBottomBar) {
+                        if (showTabs && !useRail) {
                             NavigationBar(
                                 containerColor = MaterialTheme.colorScheme.surface,
                                 contentColor = MaterialTheme.colorScheme.onSurface
                             ) {
-                                NavigationBarItem(
-                                    selected = currentDestination?.hasRoute<Screen.Home>() == true,
-                                    onClick = {
-                                        navController.navigate(Screen.Home) {
-                                            popUpTo(navController.graph.startDestinationId) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    },
-                                    icon = { Icon(Icons.Default.Home, contentDescription = "Ana Sayfa") },
-                                    label = { Text("Ana Sayfa") },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                tabs.forEach { (label, icon, screen) ->
+                                    NavigationBarItem(
+                                        selected = isSelected(screen),
+                                        onClick = { openTab(screen) },
+                                        icon = { Icon(icon, contentDescription = label) },
+                                        label = { Text(label) },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            selectedIconColor = accent,
+                                            selectedTextColor = accent,
+                                            indicatorColor = accent.copy(alpha = 0.15f),
+                                            unselectedIconColor = muted,
+                                            unselectedTextColor = muted
+                                        )
                                     )
-                                )
-                                NavigationBarItem(
-                                    selected = currentDestination?.hasRoute<Screen.Lists>() == true,
-                                    onClick = {
-                                        navController.navigate(Screen.Lists) {
-                                            popUpTo(navController.graph.startDestinationId) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    },
-                                    icon = { Icon(Icons.Default.List, contentDescription = "Listeler") },
-                                    label = { Text("Listeler") },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                    )
-                                )
-                                NavigationBarItem(
-                                    selected = currentDestination?.hasRoute<Screen.History>() == true,
-                                    onClick = {
-                                        navController.navigate(Screen.History) {
-                                            popUpTo(navController.graph.startDestinationId) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    },
-                                    icon = { Icon(Icons.Default.History, contentDescription = "Geçmiş") },
-                                    label = { Text("Geçmiş") },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                    )
-                                )
+                                }
                             }
                         }
                     }
                 ) { innerPadding ->
-                    Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                        // pushes the screen down instead of covering its title
-                        AnimatedVisibility(visible = !online) { OfflineBanner() }
-                        NapsakNavGraph(
-                            navController = navController,
-                            sharedViewModel = sharedViewModel,
-                            initialRoomCode = pendingRoomCode.value,
-                            modifier = Modifier.weight(1f).fillMaxWidth()
-                        )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                            .consumeWindowInsets(innerPadding)
+                            .imePadding() // content stays above the keyboard
+                    ) {
+                        if (showTabs && useRail) {
+                            NavigationRail(containerColor = MaterialTheme.colorScheme.surface) {
+                                tabs.forEach { (label, icon, screen) ->
+                                    NavigationRailItem(
+                                        selected = isSelected(screen),
+                                        onClick = { openTab(screen) },
+                                        icon = { Icon(icon, contentDescription = label) },
+                                        label = { Text(label) },
+                                        colors = NavigationRailItemDefaults.colors(
+                                            selectedIconColor = accent,
+                                            selectedTextColor = accent,
+                                            indicatorColor = accent.copy(alpha = 0.15f),
+                                            unselectedIconColor = muted,
+                                            unselectedTextColor = muted
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                        Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                            // pushes the screen down instead of covering its title
+                            AnimatedVisibility(visible = !online) { OfflineBanner() }
+                            // phones use the full width; tablets, foldables and landscape get a centred column
+                            Box(
+                                modifier = Modifier.weight(1f).fillMaxWidth(),
+                                contentAlignment = Alignment.TopCenter
+                            ) {
+                                NapsakNavGraph(
+                                    navController = navController,
+                                    sharedViewModel = sharedViewModel,
+                                    initialRoomCode = pendingRoomCode.value,
+                                    modifier = Modifier.widthIn(max = 640.dp).fillMaxSize()
+                                )
+                            }
+                        }
                     }
                 }
             }

@@ -54,7 +54,8 @@ fun ListsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                // the title takes the remaining width so it wraps instead of running into the button
+                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                     Text(
                         text = "ŞABLONLARIM",
                         style = MaterialTheme.typography.titleSmall.copy(
@@ -86,7 +87,7 @@ fun ListsScreen(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Yeni Ekle", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text("Yeni Ekle", fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
                 }
             }
 

@@ -47,12 +47,13 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CreateChoicesScreen(
     roomId: String,
@@ -60,6 +61,7 @@ fun CreateChoicesScreen(
     viewModel: CreateChoicesViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val compactHeight = LocalConfiguration.current.screenHeightDp < 500
 
     LaunchedEffect(roomId) { viewModel.observeSuggestions(roomId) }
 
@@ -160,7 +162,8 @@ fun CreateChoicesScreen(
 
     val matchingTemplates = remember(selectedCategoryFilter, uiState.savedLists) {
         val presets = viewModel.getDefaultLists()
-        val allLists = presets + uiState.savedLists
+        // saved lists start out as a copy of the presets, so the same template must not show twice
+        val allLists = (presets + uiState.savedLists).distinctBy { it.id }
         if (selectedCategoryFilter == "Tümü") {
             allLists
         } else {
@@ -599,13 +602,15 @@ fun CreateChoicesScreen(
             }
 
             // room for the sticky start bar
-            Spacer(modifier = Modifier.height(190.dp))
+            Spacer(modifier = Modifier.height(if (compactHeight) 84.dp else 190.dp))
         }
 
-        StickyStartBar(
+        // hidden while typing so the keyboard and the bar do not squeeze the form
+        if (!WindowInsets.isImeVisible) StickyStartBar(
             modifier = Modifier.align(Alignment.BottomCenter),
             choiceCount = uiState.choices.size,
             mode = uiState.voteMode,
+            compact = compactHeight,
             onModeChange = viewModel::onVoteModeChange,
             onStart = {
                 viewModel.startVoting(

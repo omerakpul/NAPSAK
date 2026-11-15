@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.activity.compose.BackHandler
 import coil3.compose.AsyncImage
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import com.napsak.app.domain.model.VoteMode
 import com.napsak.app.ui.OptionEmoji
 import androidx.compose.material.icons.automirrored.filled.Undo
@@ -62,6 +64,8 @@ fun VotingScreen(
     val allChoices by sharedViewModel.choices.collectAsState()
     val choices = remember(allChoices) { allChoices.toList() }
     val voteMode by sharedViewModel.voteMode.collectAsState()
+    // phones in landscape and small split-screen windows
+    val compactHeight = LocalConfiguration.current.screenHeightDp < 500
     val votePending by sharedViewModel.votePending.collectAsState()
 
     // Track liked choices
@@ -191,10 +195,10 @@ fun VotingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(horizontal = 24.dp, vertical = if (compactHeight) 8.dp else 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(if (compactHeight) 0.dp else 16.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -237,7 +241,7 @@ fun VotingScreen(
                 )
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(if (compactHeight) 8.dp else 24.dp))
 
             // Tinder Card Container
             Box(
@@ -260,6 +264,7 @@ fun VotingScreen(
                     }
                 } else if (currentChoice != null) {
                     SwipeableCard(
+                        compact = compactHeight,
                         choice = currentChoice,
                         onSwipeLeft = { registerSwipe(false) },
                         onSwipeRight = { registerSwipe(true) }
@@ -276,7 +281,7 @@ fun VotingScreen(
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 24.dp)
+                        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = if (compactHeight) 4.dp else 24.dp)
                     ) {
                         Text(
                             text = "🎉",
@@ -400,7 +405,7 @@ fun VotingScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(if (compactHeight) 8.dp else 24.dp))
 
             // Action Buttons (Cross & Heart)
             if (currentChoice != null && voteMode == VoteMode.LIKE) {
@@ -460,7 +465,7 @@ fun VotingScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(if (compactHeight) 0.dp else 16.dp))
         }
 
         // Eşitlik Çözücü Animasyon Dialog
@@ -548,13 +553,14 @@ fun VotingScreen(
 
 @Composable
 fun SwipeableCard(
+    compact: Boolean = false,
     choice: Choice,
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     val screenWidth = with(LocalDensity.current) {
-        LocalConfiguration.current.screenWidthDp.dp.toPx()
+        LocalConfiguration.current.screenWidthDp.coerceAtMost(640).dp.toPx() // content is capped at 640dp
     }
     
     val swipeThreshold = screenWidth * 0.4f
@@ -565,7 +571,7 @@ fun SwipeableCard(
 
     Box(
         modifier = Modifier
-            .fillMaxHeight(0.9f)
+            .fillMaxHeight(if (compact) 1f else 0.9f)
             .fillMaxWidth(0.95f),
         contentAlignment = Alignment.Center
     ) {
@@ -703,12 +709,12 @@ fun SwipeableCard(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(32.dp),
+                            .padding(if (compact) 12.dp else 32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        OptionEmoji(choice.name, choice.category, size = 110.dp)
-                        Spacer(modifier = Modifier.height(20.dp))
+                        OptionEmoji(choice.name, choice.category, size = if (compact) 56.dp else 110.dp)
+                        Spacer(modifier = Modifier.height(if (compact) 8.dp else 20.dp))
                         if (choice.category.isNotBlank()) {
                             Box(
                                 modifier = Modifier

@@ -296,78 +296,106 @@ private fun VoteMode.hint() = when (this) {
     VoteMode.RANK -> "Herkes tüm seçenekleri sıralar; en yüksek toplam puan kazanır."
 }
 
-/** Always-visible bottom bar: vote mode chips and the start button. */
+/** Always-visible bottom bar: vote mode and the start button. [compact] puts them side by side (landscape). */
 @Composable
 fun StickyStartBar(
     modifier: Modifier = Modifier,
     choiceCount: Int,
     mode: VoteMode,
     onModeChange: (VoteMode) -> Unit,
+    compact: Boolean = false,
     onStart: () -> Unit
 ) {
     val enabled = choiceCount >= 2
+
+    val modePicker: @Composable (Modifier) -> Unit = { m ->
+        SingleChoiceSegmentedButtonRow(modifier = m) {
+            VoteMode.entries.forEachIndexed { index, item ->
+                SegmentedButton(
+                    selected = mode == item,
+                    onClick = { onModeChange(item) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = VoteMode.entries.size),
+                    colors = SegmentedButtonDefaults.colors(
+                        activeContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                        activeContentColor = MaterialTheme.colorScheme.primary,
+                        activeBorderColor = MaterialTheme.colorScheme.primary,
+                        inactiveContainerColor = Color.Transparent,
+                        inactiveContentColor = MaterialTheme.colorScheme.onSurface,
+                        inactiveBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
+                    ),
+                    icon = { if (!compact) SegmentedButtonDefaults.Icon(mode == item) },
+                    label = { Text(item.label(), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                )
+            }
+        }
+    }
+
+    val startButton: @Composable (Modifier) -> Unit = { m ->
+        Button(
+            onClick = onStart,
+            modifier = m.height(52.dp),
+            shape = RoundedCornerShape(16.dp),
+            enabled = enabled,
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+            contentPadding = PaddingValues()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .background(
+                        brush = if (enabled) Brush.horizontalGradient(listOf(CoralPrimary, CoralPrimaryDark))
+                        else Brush.horizontalGradient(listOf(Color.Gray.copy(alpha = 0.4f), Color.Gray.copy(alpha = 0.4f))),
+                        shape = RoundedCornerShape(16.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = when {
+                            !enabled -> "En az 2 seçenek ekle"
+                            compact -> "Oylamaya Geç ($choiceCount)"
+                            else -> "Oylamaya Geç ($choiceCount seçenek)"
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold, color = Color.White)
+                    )
+                    if (enabled) {
+                        Spacer(Modifier.width(8.dp))
+                        Icon(Icons.Default.ArrowForward, contentDescription = "İleri", tint = Color.White)
+                    }
+                }
+            }
+        }
+    }
+
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 12.dp
     ) {
-        Column(
-            modifier = Modifier.navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                VoteMode.entries.forEachIndexed { index, m ->
-                    SegmentedButton(
-                        selected = mode == m,
-                        onClick = { onModeChange(m) },
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = VoteMode.entries.size),
-                        colors = SegmentedButtonDefaults.colors(
-                            activeContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                            activeContentColor = MaterialTheme.colorScheme.primary,
-                            activeBorderColor = MaterialTheme.colorScheme.primary,
-                            inactiveContainerColor = Color.Transparent,
-                            inactiveContentColor = MaterialTheme.colorScheme.onSurface,
-                            inactiveBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
-                        ),
-                        label = { Text(m.label()) }
-                    )
-                }
-            }
-            Text(
-                text = mode.hint(),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-            Button(
-                onClick = onStart,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                enabled = enabled,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                contentPadding = PaddingValues()
+        if (compact) {
+            Row(
+                modifier = Modifier.navigationBarsPadding().padding(horizontal = 20.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .background(
-                            brush = if (enabled) Brush.horizontalGradient(listOf(CoralPrimary, CoralPrimaryDark))
-                            else Brush.horizontalGradient(listOf(Color.Gray.copy(alpha = 0.4f), Color.Gray.copy(alpha = 0.4f))),
-                            shape = RoundedCornerShape(16.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = if (enabled) "Oylamaya Geç ($choiceCount seçenek)" else "En az 2 seçenek ekle",
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold, color = Color.White)
-                        )
-                        if (enabled) {
-                            Spacer(Modifier.width(8.dp))
-                            Icon(Icons.Default.ArrowForward, contentDescription = "İleri", tint = Color.White)
-                        }
-                    }
-                }
+                modePicker(Modifier.weight(1.2f))
+                startButton(Modifier.weight(1f))
+            }
+        } else {
+            Column(
+                modifier = Modifier.navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                modePicker(Modifier.fillMaxWidth())
+                Text(
+                    text = mode.hint(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                startButton(Modifier.fillMaxWidth())
             }
         }
     }
