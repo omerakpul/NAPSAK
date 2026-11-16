@@ -41,6 +41,8 @@ import androidx.compose.ui.platform.LocalContext
 import coil3.compose.AsyncImage
 
 import com.napsak.app.ui.screens.shared.SharedSessionViewModel
+import androidx.compose.ui.res.stringResource
+import com.napsak.app.R
 
 @Composable
 fun LobbyScreen(
@@ -121,11 +123,11 @@ fun LobbyScreen(
         ) {
             Icon(
                 imageVector = Icons.Default.CheckCircle,
-                contentDescription = "Hazır Durumu"
+                contentDescription = stringResource(R.string.lobby_ready_cd)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = if (isReady) "Hazırım!" else "Hazır Durumuna Geç",
+                text = stringResource(if (isReady) R.string.lobby_im_ready else R.string.lobby_get_ready),
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = FontWeight.Bold
                 )
@@ -148,10 +150,10 @@ fun LobbyScreen(
                     containerColor = CoralPrimary
                 )
             ) {
-                Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Başlat")
+                Icon(imageVector = Icons.Default.PlayArrow, contentDescription = stringResource(R.string.lobby_start_cd))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Oylamayı Başlat",
+                    text = stringResource(R.string.lobby_start),
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontWeight = FontWeight.Bold
                     )
@@ -159,7 +161,7 @@ fun LobbyScreen(
             }
             if (!allReady) {
                 Text(
-                    text = "Oylamayı başlatmak için tüm katılımcıların hazır olması bekleniyor.",
+                    text = stringResource(R.string.lobby_start_hint),
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                         textAlign = TextAlign.Center
@@ -199,7 +201,7 @@ fun LobbyScreen(
             // Lobby Header
             Text(
                 modifier = Modifier.semantics { heading() },
-                text = "BEKLEME LOBİSİ",
+                text = stringResource(R.string.lobby_title),
                 style = MaterialTheme.typography.titleSmall.copy(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -223,7 +225,7 @@ fun LobbyScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Oda Kodu",
+                        text = stringResource(R.string.lobby_room_code),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
@@ -238,12 +240,12 @@ fun LobbyScreen(
                         ),
                         modifier = Modifier.clickable {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            clipboard.setPrimaryClip(ClipData.newPlainText("Oda Kodu", roomId))
-                            Toast.makeText(context, "Oda kodu kopyalandı", Toast.LENGTH_SHORT).show()
+                            clipboard.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.lobby_room_code), roomId))
+                            Toast.makeText(context, context.getString(R.string.lobby_code_copied), Toast.LENGTH_SHORT).show()
                         }
                     )
                     Text(
-                        text = "Kopyalamak için koda dokun",
+                        text = stringResource(R.string.lobby_tap_copy),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                         )
@@ -253,7 +255,7 @@ fun LobbyScreen(
                         onClick = {
                             val sendIntent = Intent().apply {
                                 action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_TEXT, "N'APSAK? Odamıza katıl!\nLink: ${roomLink(roomId)}\nOda Kodu: $roomId")
+                                putExtra(Intent.EXTRA_TEXT, context.getString(R.string.lobby_share_text, roomLink(roomId), roomId))
                                 type = "text/plain"
                             }
                             val shareIntent = Intent.createChooser(sendIntent, null)
@@ -261,9 +263,9 @@ fun LobbyScreen(
                         },
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Share, contentDescription = "Paylaş")
+                        Icon(imageVector = Icons.Default.Share, contentDescription = stringResource(R.string.share_cd))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Kodu Arkadaşlarınla Paylaş")
+                        Text(stringResource(R.string.lobby_share_code))
                     }
                     
                     Spacer(modifier = Modifier.height(16.dp))
@@ -276,7 +278,7 @@ fun LobbyScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     Text(
-                        text = "Veya QR Kodu Taratın",
+                        text = stringResource(R.string.lobby_or_qr),
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         )
@@ -297,7 +299,7 @@ fun LobbyScreen(
                             val qr = remember(roomId) { qrBitmap(roomLink(roomId)).asImageBitmap() }
                             Image(
                                 bitmap = qr,
-                                contentDescription = "QR Code",
+                                contentDescription = stringResource(R.string.lobby_qr_cd),
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -314,13 +316,13 @@ fun LobbyScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Katılımcılar (${participants.size})",
+                    text = stringResource(R.string.lobby_participants, participants.size),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold
                     )
                 )
                 Text(
-                    text = "Hazır: ${participants.count { it.isReady }}/${participants.size}",
+                    text = stringResource(R.string.lobby_ready_ratio, participants.count { it.isReady }, participants.size),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold
@@ -335,7 +337,7 @@ fun LobbyScreen(
 
                 items(participants) { participant ->
                     val isParticipantHost = room.hostId == participant.id
-                    val displayName = if (isParticipantHost) "${participant.name} (Host)" else participant.name
+                    val displayName = if (isParticipantHost) stringResource(R.string.lobby_host_suffix, participant.name) else participant.name
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
@@ -380,7 +382,7 @@ fun LobbyScreen(
 
                             // Ready indicator chip
                             val statusColor = if (participant.isReady) Color(0xFF4CAF50) else AmberSecondary
-                            val statusText = if (participant.isReady) "Hazır" else "Bekliyor"
+                            val statusText = stringResource(if (participant.isReady) R.string.status_ready else R.string.status_waiting)
                             
                             SuggestionChip(
                                 onClick = {},
@@ -413,7 +415,7 @@ fun LobbyScreen(
                 } else if (room.suggestions.isNotEmpty()) {
                     item {
                         Text(
-                            text = "${room.suggestions.size} öneri geldi, sonraki ekranda görebilirsin.",
+                            text = stringResource(R.string.lobby_suggestions_in, room.suggestions.size),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.SemiBold

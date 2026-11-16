@@ -29,6 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.napsak.app.domain.model.Suggestion
+import androidx.compose.ui.res.stringResource
+import com.napsak.app.R
 
 /** Lets a participant propose an option to the host while the room is still in the lobby. */
 @Composable
@@ -49,16 +51,16 @@ fun SuggestionForm(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Bir seçenek öner", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+            Text(stringResource(R.string.suggest_title), style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
             Text(
-                "Önerin host'a iletilir, host listeye ekleyebilir (en fazla 5).",
+                stringResource(R.string.suggest_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             NapsakTextField(
                 value = name,
                 onValueChange = { name = it.take(100); failed = false },
-                label = "Seçenek adı",
+                label = stringResource(R.string.suggest_name),
                 leadingIcon = Icons.Default.Edit,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !limitReached
@@ -66,7 +68,7 @@ fun SuggestionForm(
             NapsakTextField(
                 value = details,
                 onValueChange = { details = it.take(500) },
-                label = "Açıklama (isteğe bağlı)",
+                label = stringResource(R.string.suggest_details),
                 leadingIcon = Icons.Default.Info,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !limitReached
@@ -86,10 +88,10 @@ fun SuggestionForm(
                 enabled = name.isNotBlank() && !sending && !limitReached,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
-            ) { Text(if (limitReached) "Öneri limitine ulaştın" else "Öneriyi Gönder") }
+            ) { Text(stringResource(if (limitReached) R.string.suggest_limit else R.string.suggest_send)) }
             if (failed) {
                 Text(
-                    "Öneri gönderilemedi. Oylama başlamış olabilir.",
+                    stringResource(R.string.suggest_failed),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -98,7 +100,7 @@ fun SuggestionForm(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(s.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                     IconButton(onClick = { onRemove(s) }) {
-                        Icon(Icons.Default.Close, contentDescription = "Önerimi geri çek")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.suggest_withdraw))
                     }
                 }
             }

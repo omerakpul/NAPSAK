@@ -76,7 +76,7 @@ window.addEventListener("DOMContentLoaded", () => {
 // Supabase Anonymous Authentication
 async function initAuth() {
     btnJoin.disabled = true;
-    btnJoin.innerHTML = 'Bağlanılıyor... <i class="fa-solid fa-spinner fa-spin"></i>';
+    btnJoin.innerHTML = t("join.connecting") + ' <i class="fa-solid fa-spinner fa-spin"></i>';
     try {
         let { data: { session } } = await sb.auth.getSession();
         if (!session) {
@@ -87,10 +87,10 @@ async function initAuth() {
         userId = session.user.id;
         localStorage.setItem("napsak_user_id", userId);
         btnJoin.disabled = false;
-        btnJoin.innerHTML = 'Katıl <i class="fa-solid fa-right-to-bracket"></i>';
+        btnJoin.innerHTML = t("join.btn") + ' <i class="fa-solid fa-right-to-bracket"></i>';
     } catch (error) {
         console.error("Anonymous auth failed:", error);
-        alert("Sunucuya bağlanılamadı!");
+        alert(t("join.serverError"));
     }
 }
 initAuth();
@@ -115,12 +115,12 @@ btnJoin.addEventListener("click", () => {
     roomId = inputRoom.value.trim();
 
     if (!userName) {
-        setFieldError(inputName, "Lütfen adını yaz.");
+        setFieldError(inputName, t("join.nameRequired"));
         return;
     }
     const nameRegex = /^[a-zA-Z0-9çÇğĞıİöÖşŞüÜ\s]{1,15}$/;
     if (!nameRegex.test(userName)) {
-        setFieldError(inputName, "Sadece harf, rakam ve boşluk kullan (en fazla 15 karakter).");
+        setFieldError(inputName, t("join.nameInvalid"));
         return;
     }
     if (!roomId || roomId.length !== 6) {
@@ -130,21 +130,21 @@ btnJoin.addEventListener("click", () => {
 
     localStorage.setItem("napsak_user_name", userName);
     btnJoin.disabled = true;
-    btnJoin.innerHTML = 'Katılınıyor... <i class="fa-solid fa-spinner fa-spin"></i>';
+    btnJoin.innerHTML = t("join.joining") + ' <i class="fa-solid fa-spinner fa-spin"></i>';
 
     const resetJoinButton = () => {
         btnJoin.disabled = false;
-        btnJoin.innerHTML = 'Katıl <i class="fa-solid fa-right-to-bracket"></i>';
+        btnJoin.innerHTML = t("join.btn") + ' <i class="fa-solid fa-right-to-bracket"></i>';
     };
 
     sb.rpc("join_room", { p_room: roomId, p_name: userName }).then(({ error }) => {
         if (error) {
             console.error("Join room error:", error);
             const msg = (error.message || "").toLowerCase();
-            if (msg.includes("room not found")) setFieldError(inputRoom, "Oda bulunamadı. Kodu kontrol et.");
-            else if (msg.includes("voting already started")) setFieldError(inputRoom, "Oylama başlamış, odaya girilemiyor.");
+            if (msg.includes("room not found")) setFieldError(inputRoom, t("join.roomNotFound"));
+            else if (msg.includes("voting already started")) setFieldError(inputRoom, t("join.votingStarted"));
             else if (msg.includes("room is full")) setFieldError(inputRoom, "Oda dolu.");
-            else alert("Bağlantı hatası oluştu!");
+            else alert(t("join.connError"));
             resetJoinButton();
             return;
         }
@@ -167,10 +167,10 @@ btnReady.addEventListener("click", () => {
     // Update UI instantly for responsiveness
     if (isReady) {
         btnReady.classList.add("ready");
-        btnReady.innerHTML = 'Hazırım! <i class="fa-solid fa-check-double"></i>';
+        btnReady.innerHTML = t("lobby.imReady") + ' <i class="fa-solid fa-check-double"></i>';
     } else {
         btnReady.classList.remove("ready");
-        btnReady.innerHTML = 'Hazır Durumuna Geç <i class="fa-solid fa-circle-check"></i>';
+        btnReady.innerHTML = t("lobby.ready") + ' <i class="fa-solid fa-circle-check"></i>';
     }
 
     // supabase-js query builders are lazy: the request is only sent once .then() is attached
@@ -260,7 +260,7 @@ function onRoomData(data) {
     roomData = data;
     if (!roomData) {
         try { localStorage.removeItem("napsak_room"); } catch (e) { /* ignore */ }
-        alert("Oda kapatıldı veya bulunamadı.");
+        alert(t("join.roomClosed"));
         window.location.href = window.location.pathname;
         return;
     }
@@ -272,7 +272,7 @@ function onRoomData(data) {
         const finishedCount = participants.filter(p => p.hasVoted).length;
         const countText = document.getElementById("web-finished-count");
         if (countText) {
-            countText.textContent = `Tamamlanan: ${finishedCount} / ${total}`;
+            countText.textContent = t("vote.finished", { n: finishedCount, total });
         }
 
         const allVoted = total > 0 && participants.every(p => p.hasVoted);
@@ -330,8 +330,8 @@ btnSuggest.addEventListener("click", () => {
         btnSuggest.disabled = false;
         if (error) {
             const msg = (error.message || "").toLowerCase();
-            if (msg.includes("limit")) alert("En fazla 5 öneri gönderebilirsin.");
-            else alert("Öneri gönderilemedi. Oylama başlamış olabilir.");
+            if (msg.includes("limit")) alert(t("lobby.suggestLimit"));
+            else alert(t("lobby.suggestFailed"));
             return;
         }
         inputSuggest.value = "";
@@ -349,7 +349,7 @@ function renderMySuggestions() {
         label.textContent = sug.name;
         const remove = document.createElement("button");
         remove.type = "button";
-        remove.title = "Önerimi geri çek";
+        remove.title = t("lobby.suggestWithdraw");
         remove.innerHTML = '<i class="fa-solid fa-xmark"></i>';
         remove.addEventListener("click", () => {
             sb.rpc("dismiss_suggestion", { p_room: roomId, p_id: sug.id }).then(() => refreshRoom());
@@ -398,14 +398,14 @@ function updateVoterProgressUI() {
         const finishedCount = participants.filter(p => p.hasVoted).length;
         const countText = document.getElementById("web-finished-count");
         if (countText) {
-            countText.textContent = `Tamamlanan: ${finishedCount} / ${total}`;
+            countText.textContent = t("vote.finished", { n: finishedCount, total });
         }
     }
 }
 
 // Update Lobby UI
 function updateLobbyUI() {
-    lobbyRoomCode.textContent = "Oda: " + roomId;
+    lobbyRoomCode.textContent = t("lobby.room", { code: roomId });
     
     // Map participants
     const participants = [];
@@ -425,7 +425,7 @@ function updateLobbyUI() {
     // Update count
     participantCount.textContent = participants.length;
     const readyCount = participants.filter(p => p.ready).length;
-    readyRatio.textContent = `Hazır: ${readyCount}/${participants.length}`;
+    readyRatio.textContent = t("lobby.readyRatio", { n: readyCount, total: participants.length });
 
     // Render list
     participantsList.innerHTML = "";
@@ -436,7 +436,7 @@ function updateLobbyUI() {
         
         const isHost = roomData.hostId === p.id;
         const escapedName = escapeHTML(p.name);
-        const displayName = isSelf ? `${escapedName} (Sen)` : escapedName;
+        const displayName = isSelf ? `${escapedName} (${t("lobby.you")})` : escapedName;
         
         item.innerHTML = `
             <div class="p-info">
@@ -444,7 +444,7 @@ function updateLobbyUI() {
                 <div class="p-name">${displayName}${isHost ? ' <i class="fa-solid fa-crown" style="color:#FFD700;font-size:12px;"></i>' : ''}</div>
             </div>
             <span class="p-status-badge ${p.ready ? 'ready' : 'waiting'}">
-                ${p.ready ? 'Hazır' : 'Bekliyor'}
+                ${p.ready ? t("lobby.statusReady") : t("lobby.statusWaiting")}
             </span>
         `;
         participantsList.appendChild(item);
@@ -487,13 +487,13 @@ function initVotingScreen() {
     if (!timerInterval && choicesList.length > 0) {
         timeLeft = choicesList.length * 5;
         const timerBadge = document.getElementById("voting-timer");
-        timerBadge.textContent = "Kalan Süre: " + timeLeft + "s";
+        timerBadge.textContent = t("vote.timeLeft", { s: timeLeft });
         timerBadge.classList.remove("warning");
         timerBadge.classList.remove("hidden");
         
         timerInterval = setInterval(() => {
             timeLeft--;
-            timerBadge.textContent = "Kalan Süre: " + timeLeft + "s";
+            timerBadge.textContent = t("vote.timeLeft", { s: timeLeft });
             
             if (timeLeft <= 5) {
                 timerBadge.classList.add("warning");
@@ -538,9 +538,9 @@ function initListVoting() {
     document.getElementById("voting-timer").classList.add("hidden");
     listVoting.classList.remove("hidden");
     document.getElementById("list-voting-hint").textContent = mode === "SINGLE"
-        ? "En çok istediğin seçeneği işaretle."
-        : "Seçenekleri sırala: en iyi en üstte olsun.";
-    btnSubmitList.textContent = mode === "SINGLE" ? "Oyumu Gönder" : "Sıralamayı Gönder";
+        ? t("vote.listHintSingle")
+        : t("vote.listHintRank");
+    btnSubmitList.textContent = mode === "SINGLE" ? t("vote.submitSingle") : t("vote.submitRank");
     btnSubmitList.disabled = mode === "SINGLE";
 
     function render() {
@@ -637,7 +637,7 @@ function renderCardsStack() {
     const hasImage = choice.imageUrl && choice.imageUrl.trim() !== "" && choice.imageUrl !== "null" && choice.imageUrl !== "undefined";
     const safeImageUrl = (hasImage && choice.imageUrl.startsWith('https://')) ? escapeHTML(choice.imageUrl) : '';
     const safeName = escapeHTML(choice.name);
-    const safeDetails = escapeHTML(choice.details) || "Açıklama bulunmuyor.";
+    const safeDetails = escapeHTML(choice.details) || t("vote.noDetails");
     
     if (hasImage && safeImageUrl) {
         card.className = "swipe-card";
@@ -888,14 +888,14 @@ function submitVotes(attempt = 1) {
     // One RPC: records this player's likes and marks them as voted atomically (server enforces one vote per player).
     // Network failures are retried with a growing delay; rule violations are not.
     const status = document.getElementById("vote-send-status");
-    if (status && attempt > 1) status.textContent = "Oyların gönderiliyor, bağlantı bekleniyor…";
+    if (status && attempt > 1) status.textContent = t("vote.sending");
     sb.rpc("submit_votes", { p_room: roomId, p_choice_ids: likedChoiceIds }).then(({ error }) => {
         if (!error) { if (status) status.textContent = ""; return; }
         const msg = (error.message || "").toLowerCase();
         if (msg.includes("already voted")) { if (status) status.textContent = ""; return; }
         const permanent = ["not in voting", "not a participant", "invalid choice", "pick exactly", "duplicate"].some(k => msg.includes(k));
         if (permanent || attempt >= 30) {
-            if (status) status.textContent = "Oylar gönderilemedi.";
+            if (status) status.textContent = t("vote.sendFailed");
             console.warn("submit_votes failed:", error.message);
             return;
         }
@@ -916,7 +916,7 @@ function startWebResultCountdown() {
     
     // Set initial display
     if (textElement) {
-        textElement.innerHTML = `Herkes oyladı! Sonuçlar açıklanıyor... <span style="font-size:28px; font-weight:900; color:var(--primary); display:block; margin-top:8px;">${secondsLeft}</span>`;
+        textElement.innerHTML = `${t("vote.allVoted")} <span style="font-size:28px; font-weight:900; color:var(--primary-text); display:block; margin-top:8px;">${secondsLeft}</span>`;
     }
     secondsLeft--;
 
@@ -924,12 +924,12 @@ function startWebResultCountdown() {
         if (secondsLeft < 0) {
             clearInterval(interval);
             if (textElement) {
-                textElement.innerHTML = `Sonuçlar yükleniyor... <i class="fa-solid fa-spinner fa-spin"></i>`;
+                textElement.innerHTML = `${t("vote.loadingResults")} <i class="fa-solid fa-spinner fa-spin"></i>`;
             }
             return;
         }
         if (textElement) {
-            textElement.innerHTML = `Herkes oyladı! Sonuçlar açıklanıyor... <span style="font-size:28px; font-weight:900; color:var(--primary); display:block; margin-top:8px;">${secondsLeft}</span>`;
+            textElement.innerHTML = `${t("vote.allVoted")} <span style="font-size:28px; font-weight:900; color:var(--primary-text); display:block; margin-top:8px;">${secondsLeft}</span>`;
         }
         secondsLeft--;
     }, 1000);
@@ -940,8 +940,8 @@ function showResultScreen() {
     const winnerChoiceId = roomData.winnerChoiceId;
     if (!winnerChoiceId || !roomData.choices || !roomData.choices[winnerChoiceId]) {
         // Fallback if winner isn't resolved yet
-        winnerName.textContent = "Karar belirleniyor...";
-        winnerDetails.textContent = "Lütfen bekleyin.";
+        winnerName.textContent = t("result.deciding");
+        winnerDetails.textContent = t("result.pleaseWait");
         btnMaps.classList.add("hidden");
         return;
     }
@@ -961,8 +961,8 @@ function showResultScreen() {
         
         // Show raffle header state
         resultBadge.className = "badge warning";
-        resultBadge.innerHTML = 'Kura Çekiliyor... <i class="fa-solid fa-dice"></i>';
-        resultTitle.textContent = "Kura Başladı";
+        resultBadge.innerHTML = t("result.raffleBadge") + ' <i class="fa-solid fa-dice"></i>';
+        resultTitle.textContent = t("result.raffleTitle");
         
         // Hide actions during raffle
         btnMaps.classList.add("hidden");
@@ -971,8 +971,8 @@ function showResultScreen() {
         runWebRaffle(candidates, winner, (finalWinner) => {
             // Restore final winner headers
             resultBadge.className = "badge success";
-            resultBadge.textContent = "Karar Verildi!";
-            resultTitle.textContent = "Kazanan Seçenek";
+            resultBadge.textContent = t("result.badge");
+            resultTitle.textContent = t("result.title");
             
             // Render final winner card details
             renderWinnerCard(finalWinner);
@@ -991,8 +991,8 @@ function showResultScreen() {
     } else {
         // No tie or raffle already completed: show immediately
         resultBadge.className = "badge success";
-        resultBadge.textContent = "Karar Verildi!";
-        resultTitle.textContent = "Kazanan Seçenek";
+        resultBadge.textContent = t("result.badge");
+        resultTitle.textContent = t("result.title");
         btnReset.classList.remove("hidden");
         
         renderWinnerCard(winner);
@@ -1014,9 +1014,9 @@ function showResultScreen() {
 function renderWinnerCard(winner) {
     // Fill winner UI details
     winnerName.textContent = winner.name;
-    winnerDetails.textContent = winner.details || "Açıklama bulunmuyor.";
+    winnerDetails.textContent = winner.details || t("vote.noDetails");
     winnerVotes.textContent = winner.voteCount || 0;
-    document.getElementById("winner-unit").textContent = votingMode() === "RANK" ? "Puan" : "Oy";
+    document.getElementById("winner-unit").textContent = votingMode() === "RANK" ? t("result.unitPoint") : t("result.unitVote");
     
     const hasImage = winner.imageUrl && winner.imageUrl.trim() !== "" && winner.imageUrl !== "null" && winner.imageUrl !== "undefined";
     
@@ -1055,7 +1055,7 @@ function runWebRaffle(candidates, winner, onComplete) {
         
         // Render temporary choice details
         winnerName.textContent = tempChoice.name;
-        winnerDetails.textContent = "Eşit oy alan seçenekler arasında kura çekiliyor...";
+        winnerDetails.textContent = t("result.raffleDetails");
         winnerVotes.textContent = "?";
         
         const hasImage = tempChoice.imageUrl && tempChoice.imageUrl.trim() !== "" && tempChoice.imageUrl !== "null" && tempChoice.imageUrl !== "undefined";
@@ -1128,12 +1128,12 @@ document.getElementById("btn-share").addEventListener("click", async () => {
     const winner = roomData && roomData.choices ? roomData.choices[roomData.winnerChoiceId] : null;
     if (!winner) return;
     const url = window.location.origin + window.location.pathname;
-    const text = `N’APSAK? ile karar verdik: ${winner.name} kazandı! ${emojiFor(winner)}`;
+    const text = t("result.shareText", { name: winner.name, emoji: emojiFor(winner) });
     if (navigator.share) {
         try { await navigator.share({ title: "N’APSAK?", text, url }); } catch (e) { /* cancelled */ }
     } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(text + " " + url);
-        alert("Sonuç panoya kopyalandı!");
+        alert(t("result.copied"));
     }
 });
 

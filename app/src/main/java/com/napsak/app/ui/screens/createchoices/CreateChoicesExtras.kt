@@ -64,6 +64,10 @@ import com.napsak.app.domain.model.Suggestion
 import com.napsak.app.domain.model.VoteMode
 import com.napsak.app.ui.theme.CoralPrimary
 import com.napsak.app.ui.theme.CoralPrimaryDark
+import com.napsak.app.ui.label
+import com.napsak.app.ui.hint
+import androidx.compose.ui.res.stringResource
+import com.napsak.app.R
 
 /** Friends' suggestions for the host: add to the list or dismiss. */
 @Composable
@@ -80,7 +84,7 @@ fun SuggestionsCard(
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                text = "Arkadaşlarından öneriler (${suggestions.size})",
+                text = stringResource(R.string.suggestions_from_friends, suggestions.size),
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
             )
             suggestions.forEach { s ->
@@ -98,10 +102,10 @@ fun SuggestionsCard(
                         }
                     }
                     IconButton(onClick = { onAccept(s) }) {
-                        Icon(Icons.Default.Check, contentDescription = "Listeye ekle", tint = Color(0xFF2E9E5B))
+                        Icon(Icons.Default.Check, contentDescription = stringResource(R.string.suggestion_add_cd), tint = Color(0xFF2E9E5B))
                     }
                     IconButton(onClick = { onDismiss(s) }) {
-                        Icon(Icons.Default.Close, contentDescription = "Reddet", tint = MaterialTheme.colorScheme.error)
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.suggestion_reject_cd), tint = MaterialTheme.colorScheme.error)
                     }
                 }
             }
@@ -130,16 +134,16 @@ fun QuickEntryCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Toplu Ekle", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                    Text(stringResource(R.string.bulk_title), style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
                     Text(
-                        "Her satıra bir seçenek yaz veya yapıştır",
+                        stringResource(R.string.bulk_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
                     )
                 }
                 Icon(
                     if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = if (expanded) "Kapat" else "Aç"
+                    contentDescription = stringResource(if (expanded) R.string.close else R.string.open)
                 )
             }
             AnimatedVisibility(visible = expanded) {
@@ -147,8 +151,8 @@ fun QuickEntryCard(
                     NapsakTextField(
                         value = text,
                         onValueChange = onTextChange,
-                        label = "Seçenekler (her satıra bir tane)",
-                        placeholder = "Pizza\nBurger - gurme hamburger\nSushi",
+                        label = stringResource(R.string.bulk_label),
+                        placeholder = stringResource(R.string.bulk_placeholder),
                         singleLine = false,
                         minLines = 4,
                         maxLines = 10,
@@ -159,7 +163,7 @@ fun QuickEntryCard(
                             val added = onAdd()
                             Toast.makeText(
                                 context,
-                                if (added > 0) "$added seçenek eklendi" else "Eklenecek yeni satır bulunamadı",
+                                if (added > 0) context.getString(R.string.bulk_added, added) else context.getString(R.string.bulk_none),
                                 Toast.LENGTH_SHORT
                             ).show()
                             if (added > 0) expanded = false
@@ -170,7 +174,7 @@ fun QuickEntryCard(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Satırları Ekle")
+                        Text(stringResource(R.string.bulk_add_lines))
                     }
                 }
             }
@@ -202,16 +206,16 @@ fun PlaceSearchCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Haritadan Mekan Ara", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                    Text(stringResource(R.string.place_title), style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
                     Text(
-                        "Mekanı bul, adı ve konumu otomatik dolsun",
+                        stringResource(R.string.place_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
                     )
                 }
                 Icon(
                     if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = if (expanded) "Kapat" else "Aç"
+                    contentDescription = stringResource(if (expanded) R.string.close else R.string.open)
                 )
             }
             AnimatedVisibility(visible = expanded) {
@@ -219,14 +223,14 @@ fun PlaceSearchCard(
                     NapsakTextField(
                         value = query,
                         onValueChange = onQueryChange,
-                        label = "Mekan veya adres (ör: Kadıköy Starbucks)",
+                        label = stringResource(R.string.place_label),
                         leadingIcon = Icons.Default.Place,
                         trailing = {
                             if (isSearching) {
                                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                             } else {
                                 IconButton(onClick = onSearch, enabled = query.trim().length >= 2) {
-                                    Icon(Icons.Default.Search, contentDescription = "Ara")
+                                    Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search))
                                 }
                             }
                         },
@@ -236,13 +240,13 @@ fun PlaceSearchCard(
                     )
                     if (failed) {
                         Text(
-                            "Arama yapılamadı, bağlantını kontrol edip tekrar dene.",
+                            stringResource(R.string.place_failed),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error
                         )
                     } else if (results.isEmpty() && !isSearching && query.isNotBlank()) {
                         Text(
-                            "Sonuçlar burada görünür. Aramak için büyüteç simgesine dokun.",
+                            stringResource(R.string.place_results_hint),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         )
@@ -274,7 +278,7 @@ fun PlaceSearchCard(
                         }
                     }
                     Text(
-                        "Arama OpenStreetMap ile yapılır.",
+                        stringResource(R.string.place_osm),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                     )
@@ -282,18 +286,6 @@ fun PlaceSearchCard(
             }
         }
     }
-}
-
-private fun VoteMode.label() = when (this) {
-    VoteMode.LIKE -> "Beğen"
-    VoteMode.SINGLE -> "Tek seçim"
-    VoteMode.RANK -> "Sırala"
-}
-
-private fun VoteMode.hint() = when (this) {
-    VoteMode.LIKE -> "Herkes seçenekleri kaydırarak beğenir; en çok beğenilen kazanır."
-    VoteMode.SINGLE -> "Herkes tek bir seçenek seçer; en çok oy alan kazanır."
-    VoteMode.RANK -> "Herkes tüm seçenekleri sıralar; en yüksek toplam puan kazanır."
 }
 
 /** Always-visible bottom bar: vote mode and the start button. [compact] puts them side by side (landscape). */
@@ -353,9 +345,9 @@ fun StickyStartBar(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = when {
-                            !enabled -> "En az 2 seçenek ekle"
-                            compact -> "Oylamaya Geç ($choiceCount)"
-                            else -> "Oylamaya Geç ($choiceCount seçenek)"
+                            !enabled -> stringResource(R.string.start_need_two)
+                            compact -> stringResource(R.string.start_go_compact, choiceCount)
+                            else -> stringResource(R.string.start_go, choiceCount)
                         },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -363,21 +355,23 @@ fun StickyStartBar(
                     )
                     if (enabled) {
                         Spacer(Modifier.width(8.dp))
-                        Icon(Icons.Default.ArrowForward, contentDescription = "İleri", tint = Color.White)
+                        Icon(Icons.Default.ArrowForward, contentDescription = stringResource(R.string.forward), tint = Color.White)
                     }
                 }
             }
         }
     }
 
+    // same 24 dp side margin as the cards above, so the bar is exactly as wide as the card column
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().padding(horizontal = 24.dp),
         color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         shadowElevation = 12.dp
     ) {
         if (compact) {
             Row(
-                modifier = Modifier.navigationBarsPadding().padding(horizontal = 20.dp, vertical = 8.dp),
+                modifier = Modifier.navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -386,7 +380,7 @@ fun StickyStartBar(
             }
         } else {
             Column(
-                modifier = Modifier.navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
+                modifier = Modifier.navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 modePicker(Modifier.fillMaxWidth())

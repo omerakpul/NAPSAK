@@ -20,6 +20,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.napsak.app.R
 
 /** Shown on every screen while the device is offline; announced politely by screen readers. */
 @Composable
@@ -39,7 +41,7 @@ fun OfflineBanner(modifier: Modifier = Modifier) {
             Icon(Icons.Default.CloudOff, contentDescription = null)
             Spacer(Modifier.width(10.dp))
             Text(
-                text = "Bağlantı yok. Yeniden bağlanınca devam edecek.",
+                text = stringResource(R.string.offline_banner),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold
             )

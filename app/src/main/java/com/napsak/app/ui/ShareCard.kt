@@ -45,7 +45,12 @@ object ShareCard {
         restore()
     }
 
-    fun render(winner: Choice, votesText: String, people: Int): Bitmap {
+    fun render(
+        winner: Choice,
+        votesText: String,
+        people: Int,
+        footerText: String = "Grup kararını verdi! ($people kişi)"
+    ): Bitmap {
         val bitmap = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 
@@ -84,7 +89,7 @@ object ShareCard {
         canvas.drawText(pillText, (W - pill.measureText(pillText)) / 2f, pillTop + 66f, pill)
 
         val footer = paint(46f, 0xFFFFFFFF.toInt(), bold = true)
-        val line1 = "Grup kararını verdi! ($people kişi)"
+        val line1 = footerText
         canvas.drawText(line1, (W - footer.measureText(line1)) / 2f, 1230f, footer)
         val small = paint(38f, 0xCCFFFFFF.toInt())
         val line2 = "omerakpul.github.io/NAPSAK"
@@ -93,14 +98,15 @@ object ShareCard {
     }
 
     fun share(context: Context, winner: Choice, votesText: String, people: Int) {
+        val footerText = context.getString(com.napsak.app.R.string.share_footer, people)
         val dir = File(context.cacheDir, "share").apply { mkdirs() }
         val file = File(dir, "napsak-kazanan.png")
-        FileOutputStream(file).use { render(winner, votesText, people).compress(Bitmap.CompressFormat.PNG, 100, it) }
+        FileOutputStream(file).use { render(winner, votesText, people, footerText).compress(Bitmap.CompressFormat.PNG, 100, it) }
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "image/png"
             putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_TEXT, "N\u2019APSAK? ile karar verdik: ${winner.name} kazandı! ${roomLinkBase}")
+            putExtra(Intent.EXTRA_TEXT, context.getString(com.napsak.app.R.string.share_text, winner.name, roomLinkBase))
             // ClipData lets the chooser grant (and preview) the image
             clipData = ClipData.newRawUri("", uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)

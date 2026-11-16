@@ -50,6 +50,8 @@ import com.napsak.app.ui.screens.shared.SharedSessionViewModel
 import com.napsak.app.ui.theme.CoralPrimary
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import androidx.compose.ui.res.stringResource
+import com.napsak.app.R
 
 @Composable
 fun VotingScreen(
@@ -207,9 +209,9 @@ fun VotingScreen(
             ) {
                 Text(
                     text = when (voteMode) {
-                        VoteMode.LIKE -> "SEÇENEKLERİ SWIPE'LA"
-                        VoteMode.SINGLE -> "BİRİNİ SEÇ"
-                        VoteMode.RANK -> "SIRALA"
+                        VoteMode.LIKE -> stringResource(R.string.vote_header_like)
+                        VoteMode.SINGLE -> stringResource(R.string.vote_header_single)
+                        VoteMode.RANK -> stringResource(R.string.vote_header_rank)
                     },
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.Bold,
@@ -219,7 +221,7 @@ fun VotingScreen(
                 )
                 if (voteMode == VoteMode.LIKE && currentIndex < choices.size) {
                     Text(
-                        text = "Kalan Süre: ${timeLeft}s",
+                        text = stringResource(R.string.vote_time_left, timeLeft),
                         style = MaterialTheme.typography.titleSmall.copy(
                             fontWeight = FontWeight.Bold,
                             color = if (timeLeft <= 5) Color.Red else MaterialTheme.colorScheme.primary
@@ -233,8 +235,8 @@ fun VotingScreen(
             Text(
                 text = when (voteMode) {
                     VoteMode.LIKE -> "${currentIndex.coerceAtMost(choices.size)} / ${choices.size}"
-                    VoteMode.SINGLE -> "En çok istediğin seçeneği işaretle"
-                    VoteMode.RANK -> "En iyi en üstte olacak şekilde sırala"
+                    VoteMode.SINGLE -> stringResource(R.string.vote_hint_single)
+                    VoteMode.RANK -> stringResource(R.string.vote_hint_rank)
                 },
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
@@ -289,7 +291,7 @@ fun VotingScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Oylamayı bitirdin!",
+                            text = stringResource(R.string.vote_done),
                             style = MaterialTheme.typography.headlineSmall.copy(
                                 fontWeight = FontWeight.Bold
                             ),
@@ -297,7 +299,7 @@ fun VotingScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "${likedChoices.size} / ${choices.size} seçeneği beğendin.",
+                            text = stringResource(R.string.vote_liked_count, likedChoices.size, choices.size),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                             ),
@@ -307,7 +309,7 @@ fun VotingScreen(
 
                         if (allVoted) {
                             Text(
-                                text = "Sonuçlar açıklanıyor...",
+                                text = stringResource(R.string.vote_revealing),
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
@@ -331,7 +333,7 @@ fun VotingScreen(
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Text(
-                                    text = "Hesaplanıyor...",
+                                    text = stringResource(R.string.vote_calculating),
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary
@@ -347,7 +349,7 @@ fun VotingScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "Diğer katılımcıların oylamayı tamamlaması bekleniyor...",
+                                text = stringResource(R.string.vote_waiting_others),
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                                 ),
@@ -355,7 +357,7 @@ fun VotingScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Tamamlanan: $finishedCount / $totalParticipants",
+                                text = stringResource(R.string.vote_finished_count, finishedCount, totalParticipants),
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
                                 )
@@ -364,7 +366,7 @@ fun VotingScreen(
                             if (waitingNames.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "Bekleniyor: ${waitingNames.joinToString(", ")}",
+                                    text = stringResource(R.string.vote_waiting_for, waitingNames.joinToString(", ")),
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                                     ),
@@ -374,7 +376,7 @@ fun VotingScreen(
                             if (votePending) {
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "Oyların gönderiliyor, bağlantı bekleniyor…",
+                                    text = stringResource(R.string.vote_sending),
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         color = MaterialTheme.colorScheme.error,
                                         fontWeight = FontWeight.SemiBold
@@ -396,7 +398,7 @@ fun VotingScreen(
                                     TextButton(onClick = {
                                         sharedViewModel.finishVotingNow(roomId) { onNavigateToResult(roomId) }
                                     }) {
-                                        Text("Sonuçları şimdi göster")
+                                        Text(stringResource(R.string.vote_show_now))
                                     }
                                 }
                             }
@@ -424,7 +426,7 @@ fun VotingScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Pas geç",
+                            contentDescription = stringResource(R.string.vote_pass),
                             tint = Color(0xFFE57373),
                             modifier = Modifier.size(32.dp)
                         )
@@ -440,7 +442,7 @@ fun VotingScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Undo,
-                            contentDescription = "Geri al",
+                            contentDescription = stringResource(R.string.vote_undo),
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -457,7 +459,7 @@ fun VotingScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Favorite,
-                            contentDescription = "Beğen",
+                            contentDescription = stringResource(R.string.vote_like),
                             tint = Color(0xFF81C784),
                             modifier = Modifier.size(32.dp)
                         )
@@ -474,7 +476,7 @@ fun VotingScreen(
                 onDismissRequest = {}, // Animasyon sırasında kapatılamasın
                 title = {
                     Text(
-                        text = "Eşitlik Çözülüyor...",
+                        text = stringResource(R.string.vote_tie),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
@@ -591,6 +593,8 @@ fun SwipeableCard(
             )
         }
 
+        val likeLabel = stringResource(R.string.vote_like)
+        val passLabel = stringResource(R.string.vote_pass)
         Card(
             modifier = Modifier
                 .fillMaxSize()
@@ -601,8 +605,8 @@ fun SwipeableCard(
                     }
                     // the swipe gesture has no TalkBack equivalent, so offer it as actions
                     customActions = listOf(
-                        CustomAccessibilityAction("Beğen") { onSwipeRight(); true },
-                        CustomAccessibilityAction("Pas geç") { onSwipeLeft(); true }
+                        CustomAccessibilityAction(likeLabel) { onSwipeRight(); true },
+                        CustomAccessibilityAction(passLabel) { onSwipeLeft(); true }
                     )
                 }
                 .offset { IntOffset(offsetX.value.roundToInt(), 0) }

@@ -28,6 +28,8 @@ import com.napsak.app.domain.model.SavedChoiceList
 import com.napsak.app.ui.screens.home.HomeViewModel
 import com.napsak.app.ui.theme.AmberSecondary
 import com.napsak.app.ui.theme.CoralPrimary
+import androidx.compose.ui.res.stringResource
+import com.napsak.app.R
 
 @Composable
 fun ListsScreen(
@@ -57,7 +59,7 @@ fun ListsScreen(
                 // the title takes the remaining width so it wraps instead of running into the button
                 Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                     Text(
-                        text = "ŞABLONLARIM",
+                        text = stringResource(R.string.lists_title),
                         style = MaterialTheme.typography.titleSmall.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
@@ -66,7 +68,7 @@ fun ListsScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Seçenek şablonlarını yönet",
+                        text = stringResource(R.string.lists_subtitle),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                         )
@@ -83,11 +85,11 @@ fun ListsScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Yeni Liste",
+                        contentDescription = stringResource(R.string.lists_new_cd),
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Yeni Ekle", fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                    Text(stringResource(R.string.lists_new), fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
                 }
             }
 
@@ -101,7 +103,7 @@ fun ListsScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Henüz kayıtlı bir listeniz yok.",
+                        text = stringResource(R.string.lists_empty),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         ),
@@ -185,7 +187,7 @@ fun ListsScreen(
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(
-                                            text = "${list.choices.size} Seçenek",
+                                            text = stringResource(R.string.lists_count, list.choices.size),
                                             style = MaterialTheme.typography.bodySmall.copy(
                                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                             )
@@ -213,12 +215,12 @@ fun ListsScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Edit,
-                                            contentDescription = "Düzenle",
+                                            contentDescription = stringResource(R.string.edit),
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
-                                            text = "Düzenle",
+                                            text = stringResource(R.string.edit),
                                             style = MaterialTheme.typography.labelMedium.copy(
                                                 fontWeight = FontWeight.Bold
                                             )
@@ -241,12 +243,12 @@ fun ListsScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Delete,
-                                            contentDescription = "Sil",
+                                            contentDescription = stringResource(R.string.delete),
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
-                                            text = "Sil",
+                                            text = stringResource(R.string.delete),
                                             style = MaterialTheme.typography.labelMedium.copy(
                                                 fontWeight = FontWeight.Bold
                                             )

@@ -39,6 +39,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
+import com.napsak.app.R
+import com.napsak.app.domain.model.RoomError
 
 @Composable
 fun HomeScreen(
@@ -67,9 +70,17 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) { viewModel.refreshResumableRoom() }
 
-    fun friendly(e: Throwable): String = when {
-        e.message?.contains("Oda") == true || e.message?.contains("Oylama") == true -> e.message.orEmpty()
-        else -> "Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene."
+    val errNotFound = stringResource(R.string.err_room_not_found)
+    val errVotingStarted = stringResource(R.string.err_voting_started)
+    val errFull = stringResource(R.string.err_room_full)
+    val errUnreadable = stringResource(R.string.err_room_read)
+    val errConnection = stringResource(R.string.err_connection)
+    fun friendly(e: Throwable): String = when ((e as? RoomError)?.kind) {
+        RoomError.Kind.NOT_FOUND -> errNotFound
+        RoomError.Kind.VOTING_STARTED -> errVotingStarted
+        RoomError.Kind.FULL -> errFull
+        RoomError.Kind.UNREADABLE -> errUnreadable
+        null -> errConnection
     }
     val scrollState = rememberScrollState()
 
@@ -103,7 +114,7 @@ fun HomeScreen(
             )
 
             Text(
-                text = "Arkadaşlarınla ortak karar vermenin en eğlenceli yolu!",
+                text = stringResource(R.string.home_tagline),
                 style = MaterialTheme.typography.bodyLarge.copy(
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center
@@ -129,7 +140,7 @@ fun HomeScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Giriş Yap",
+                        text = stringResource(R.string.home_sign_in),
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -145,7 +156,7 @@ fun HomeScreen(
                                 name = input.filter { it.isLetterOrDigit() || it.isWhitespace() }
                             }
                         },
-                        label = "Takma Adınız",
+                        label = stringResource(R.string.home_nickname),
                         maxLength = 15,
                         leadingIcon = Icons.Default.Person,
                         modifier = Modifier.fillMaxWidth()
@@ -164,7 +175,7 @@ fun HomeScreen(
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    text = "Devam eden bir odan var: $roomId",
+                                    text = stringResource(R.string.home_resume, roomId),
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -176,11 +187,11 @@ fun HomeScreen(
                                     Button(
                                         onClick = { onNavigateToLobby(roomId) },
                                         modifier = Modifier.fillMaxWidth()
-                                    ) { Text("Odaya Dön") }
+                                    ) { Text(stringResource(R.string.home_back_to_room)) }
                                     TextButton(
                                         onClick = { viewModel.leaveResumableRoom(roomId) },
                                         modifier = Modifier.fillMaxWidth()
-                                    ) { Text("Odadan Ayrıl") }
+                                    ) { Text(stringResource(R.string.home_leave_room)) }
                                 }
                             }
                         }
@@ -228,12 +239,12 @@ fun HomeScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Add,
-                                            contentDescription = "Create Room",
+                                            contentDescription = stringResource(R.string.home_create_cd),
                                             tint = Color.White
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = if (isLoading) "Bekleniyor..." else "Yeni Oda Oluştur",
+                                            text = stringResource(if (isLoading) R.string.home_waiting else R.string.home_create),
                                             style = MaterialTheme.typography.bodyLarge.copy(
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color.White
@@ -252,7 +263,7 @@ fun HomeScreen(
                             Spacer(modifier = Modifier.height(24.dp))
 
                             Text(
-                                text = "Mevcut Odaya Katıl",
+                                text = stringResource(R.string.home_join_title),
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold
                                 ),
@@ -267,8 +278,8 @@ fun HomeScreen(
                                     roomCode = it.filter(Char::isDigit).take(6)
                                     errorMessage = null
                                 },
-                                label = "Oda Kodu (6 haneli)",
-                                helperText = "Arkadaşının paylaştığı 6 haneli kod",
+                                label = stringResource(R.string.home_room_code),
+                                helperText = stringResource(R.string.home_room_code_helper),
                                 errorText = errorMessage.takeIf { errorIsForJoin },
                                 leadingIcon = Icons.Default.Key,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -304,7 +315,7 @@ fun HomeScreen(
                                     horizontalArrangement = Arrangement.Center
                                 ) {
                                     Text(
-                                        text = "Odaya Giriş Yap",
+                                        text = stringResource(R.string.home_join),
                                         style = MaterialTheme.typography.bodyLarge.copy(
                                             fontWeight = FontWeight.Bold
                                         )
@@ -312,7 +323,7 @@ fun HomeScreen(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Icon(
                                         imageVector = Icons.Default.ArrowForward,
-                                        contentDescription = "Join Room"
+                                        contentDescription = stringResource(R.string.home_join_cd)
                                     )
                                 }
                             }

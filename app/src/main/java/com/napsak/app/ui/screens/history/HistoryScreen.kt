@@ -46,17 +46,15 @@ import com.napsak.app.ui.OptionEmoji
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.ui.res.stringResource
+import com.napsak.app.R
+import com.napsak.app.ui.label
 
-private fun VoteMode.label() = when (this) {
-    VoteMode.LIKE -> "Beğen"
-    VoteMode.SINGLE -> "Tek seçim"
-    VoteMode.RANK -> "Sıralama"
-}
-
+@Composable
 private fun HistoryEntry.meta(): String {
-    val date = SimpleDateFormat("d MMM yyyy HH:mm", Locale("tr")).format(Date(finishedAt))
-    val unit = if (mode == VoteMode.RANK) "puan" else "oy"
-    return "$date · $participantCount kişi · $winnerVotes $unit · ${mode.label()}"
+    val date = SimpleDateFormat("d MMM yyyy HH:mm", Locale.getDefault()).format(Date(finishedAt))
+    val unit = stringResource(if (mode == VoteMode.RANK) R.string.unit_points else R.string.unit_votes)
+    return stringResource(R.string.history_meta, date, participantCount, winnerVotes, unit, mode.label())
 }
 
 /** Previous decisions, stored only on this device. */
@@ -76,7 +74,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "GEÇMİŞ KARARLAR",
+                text = stringResource(R.string.history_title),
                 style = MaterialTheme.typography.titleSmall.copy(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -85,11 +83,11 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                 modifier = Modifier.weight(1f).semantics { heading() }
             )
             if (entries.isNotEmpty()) {
-                TextButton(onClick = { confirmClear = true }) { Text("Tümünü sil") }
+                TextButton(onClick = { confirmClear = true }) { Text(stringResource(R.string.history_clear_all)) }
             }
         }
         Text(
-            text = "Kararların sadece bu cihazda saklanır.",
+            text = stringResource(R.string.history_local),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.55f)
         )
@@ -101,11 +99,11 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                     Text("\uD83D\uDDC2\uFE0F", fontSize = 56.sp)
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        "Henüz bir karar vermedin.",
+                        stringResource(R.string.history_empty),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                     Text(
-                        "İlk oylamandan sonra sonuçlar burada görünür.",
+                        stringResource(R.string.history_empty_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                         textAlign = TextAlign.Center
@@ -142,7 +140,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                                     )
                                 }
                                 IconButton(onClick = { viewModel.delete(entry.id) }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Sil")
+                                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
                                 }
                             }
                             if (expanded) {
@@ -153,7 +151,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                                 }
                                 if (entry.options.isNotEmpty()) {
                                     Text(
-                                        "Seçenekler: " + entry.options.joinToString(", "),
+                                        stringResource(R.string.history_options, entry.options.joinToString(", ")),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                     )
@@ -169,12 +167,12 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
     if (confirmClear) {
         AlertDialog(
             onDismissRequest = { confirmClear = false },
-            title = { Text("Geçmişi sil?") },
-            text = { Text("Tüm geçmiş kararlar bu cihazdan silinecek.") },
+            title = { Text(stringResource(R.string.history_clear_title)) },
+            text = { Text(stringResource(R.string.history_clear_text)) },
             confirmButton = {
-                TextButton(onClick = { viewModel.clear(); confirmClear = false }) { Text("Sil") }
+                TextButton(onClick = { viewModel.clear(); confirmClear = false }) { Text(stringResource(R.string.delete)) }
             },
-            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Vazgeç") } }
+            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text(stringResource(R.string.cancel)) } }
         )
     }
 }

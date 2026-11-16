@@ -20,6 +20,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.napsak.app.R
 
 /** Shown to the host when somebody has taken a long time to vote: wait longer or show the results now. */
 @Composable
@@ -38,14 +40,14 @@ fun HostWaitPrompt(
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
-                text = "${waitingNames.joinToString(", ")} hâlâ oy vermedi. Bekleyelim mi?",
+                text = stringResource(R.string.wait_prompt, waitingNames.joinToString(", ")),
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedButton(onClick = onWait, modifier = Modifier.weight(1f)) { Text("Bekle") }
-                Button(onClick = onFinish, modifier = Modifier.weight(1f)) { Text("Sonuçları göster") }
+                OutlinedButton(onClick = onWait, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.wait)) }
+                Button(onClick = onFinish, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.show_results)) }
             }
         }
     }

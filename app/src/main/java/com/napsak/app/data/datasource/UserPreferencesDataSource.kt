@@ -18,6 +18,7 @@ import com.napsak.app.domain.model.HistoryEntry
 import com.napsak.app.domain.model.SavedChoiceList
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import com.napsak.app.R
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_prefs")
 
@@ -85,52 +86,53 @@ class UserPreferencesDataSource @Inject constructor(
     }
 
     fun getDefaultLists(): List<SavedChoiceList> {
+        // list names and options follow the app language; the category stays the stable Turkish key
         return listOf(
             SavedChoiceList(
                 id = "preset-yemek",
-                name = "Yemek",
+                name = context.getString(R.string.cat_yemek),
                 category = "Yemek",
                 choices = listOf(
-                    Choice(id = "y1", name = "Pizzacı", details = "Taş fırında İtalyan pizzası", category = "Yemek"),
-                    Choice(id = "y2", name = "Burgerci", details = "Gurme hamburgerler ve çıtır patates", category = "Yemek"),
-                    Choice(id = "y3", name = "Kebapçı", details = "Zengin meze ve enfes Adana kebap", category = "Yemek"),
-                    Choice(id = "y4", name = "Sushi Bar", details = "Uzak doğu lezzetleri ve taze roll'lar", category = "Yemek"),
-                    Choice(id = "y5", name = "Starbucks", details = "Kahve ve leziz tatlı molası", category = "Yemek")
+                    Choice(id = "y1", name = context.getString(R.string.preset_y1_name), details = context.getString(R.string.preset_y1_details), category = "Yemek"),
+                    Choice(id = "y2", name = context.getString(R.string.preset_y2_name), details = context.getString(R.string.preset_y2_details), category = "Yemek"),
+                    Choice(id = "y3", name = context.getString(R.string.preset_y3_name), details = context.getString(R.string.preset_y3_details), category = "Yemek"),
+                    Choice(id = "y4", name = context.getString(R.string.preset_y4_name), details = context.getString(R.string.preset_y4_details), category = "Yemek"),
+                    Choice(id = "y5", name = context.getString(R.string.preset_y5_name), details = context.getString(R.string.preset_y5_details), category = "Yemek")
                 )
             ),
             SavedChoiceList(
                 id = "preset-aktivite",
-                name = "Aktivite",
+                name = context.getString(R.string.cat_aktivite),
                 category = "Aktivite",
                 choices = listOf(
-                    Choice(id = "a1", name = "Bowling", details = "Grupça bowling turnuvası", category = "Aktivite"),
-                    Choice(id = "a2", name = "Sinema", details = "Vizyondaki en yeni aksiyon filmi", category = "Aktivite"),
-                    Choice(id = "a3", name = "Kafe Sohbeti", details = "Loş bir kafede koyu muhabbet", category = "Aktivite"),
-                    Choice(id = "a4", name = "Konser", details = "Açık hava rock konseri coşkusu", category = "Aktivite"),
-                    Choice(id = "a5", name = "Tiyatro", details = "Sezonun popüler komedi oyunu", category = "Aktivite")
+                    Choice(id = "a1", name = context.getString(R.string.preset_a1_name), details = context.getString(R.string.preset_a1_details), category = "Aktivite"),
+                    Choice(id = "a2", name = context.getString(R.string.preset_a2_name), details = context.getString(R.string.preset_a2_details), category = "Aktivite"),
+                    Choice(id = "a3", name = context.getString(R.string.preset_a3_name), details = context.getString(R.string.preset_a3_details), category = "Aktivite"),
+                    Choice(id = "a4", name = context.getString(R.string.preset_a4_name), details = context.getString(R.string.preset_a4_details), category = "Aktivite"),
+                    Choice(id = "a5", name = context.getString(R.string.preset_a5_name), details = context.getString(R.string.preset_a5_details), category = "Aktivite")
                 )
             ),
             SavedChoiceList(
                 id = "preset-film",
-                name = "Film",
+                name = context.getString(R.string.cat_film),
                 category = "Film",
                 choices = listOf(
-                    Choice(id = "f1", name = "Bilim Kurgu", details = "Yıldızlararası yolculuk ve uzay temalı", category = "Film"),
-                    Choice(id = "f2", name = "Komedi", details = "Gülme garantili yerli komedi", category = "Film"),
-                    Choice(id = "f3", name = "Korku", details = "Gerilim dolu karanlık bir ev hikayesi", category = "Film"),
-                    Choice(id = "f4", name = "Aksiyon / Macera", details = "Nefes kesen kovalamaca ve dövüş sahneleri", category = "Film"),
-                    Choice(id = "f5", name = "Romantik", details = "Duygusal ve sıcak bir aşk öyküsü", category = "Film")
+                    Choice(id = "f1", name = context.getString(R.string.preset_f1_name), details = context.getString(R.string.preset_f1_details), category = "Film"),
+                    Choice(id = "f2", name = context.getString(R.string.preset_f2_name), details = context.getString(R.string.preset_f2_details), category = "Film"),
+                    Choice(id = "f3", name = context.getString(R.string.preset_f3_name), details = context.getString(R.string.preset_f3_details), category = "Film"),
+                    Choice(id = "f4", name = context.getString(R.string.preset_f4_name), details = context.getString(R.string.preset_f4_details), category = "Film"),
+                    Choice(id = "f5", name = context.getString(R.string.preset_f5_name), details = context.getString(R.string.preset_f5_details), category = "Film")
                 )
             ),
             SavedChoiceList(
                 id = "preset-eglence",
-                name = "Eğlence",
+                name = context.getString(R.string.cat_eglence),
                 category = "Eğlence",
                 choices = listOf(
-                    Choice(id = "e1", name = "PlayStation Kafe", details = "FC 24 ve dövüş oyunları kapışması", category = "Eğlence"),
-                    Choice(id = "e2", name = "Karaoke", details = "Detone olmayı göze alanlar kulübü", category = "Eğlence"),
-                    Choice(id = "e3", name = "Kutu Oyunları (Boardgames)", details = "Catan, Tabu veya Monopoly gecesi", category = "Eğlence"),
-                    Choice(id = "e4", name = "Bilardo / Dart", details = "Hassas atışlar ve rekabet", category = "Eğlence")
+                    Choice(id = "e1", name = context.getString(R.string.preset_e1_name), details = context.getString(R.string.preset_e1_details), category = "Eğlence"),
+                    Choice(id = "e2", name = context.getString(R.string.preset_e2_name), details = context.getString(R.string.preset_e2_details), category = "Eğlence"),
+                    Choice(id = "e3", name = context.getString(R.string.preset_e3_name), details = context.getString(R.string.preset_e3_details), category = "Eğlence"),
+                    Choice(id = "e4", name = context.getString(R.string.preset_e4_name), details = context.getString(R.string.preset_e4_details), category = "Eğlence")
                 )
             )
         )

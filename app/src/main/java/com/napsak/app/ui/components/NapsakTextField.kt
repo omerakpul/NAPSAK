@@ -29,6 +29,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.napsak.app.R
 
 /**
  * The app's single text input: a soft tinted field with rounded corners, no harsh outline, a floating
@@ -101,7 +103,7 @@ fun NapsakTextField(
                 clearable && enabled && focused && value.isNotEmpty() -> {
                     {
                         IconButton(onClick = { onValueChange("") }) {
-                            Icon(Icons.Default.Close, contentDescription = "Temizle")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear))
                         }
                     }
                 }

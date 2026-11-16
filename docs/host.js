@@ -17,12 +17,12 @@ function isHost() {
 }
 
 const MODES = [
-    { id: "LIKE", label: "Beğen", hint: "Herkes seçenekleri kaydırarak beğenir; en çok beğenilen kazanır." },
-    { id: "SINGLE", label: "Tek seçim", hint: "Herkes tek bir seçenek seçer; en çok oy alan kazanır." },
-    { id: "RANK", label: "Sırala", hint: "Herkes tüm seçenekleri sıralar; en yüksek toplam puan kazanır." }
+    { id: "LIKE" },
+    { id: "SINGLE" },
+    { id: "RANK" }
 ];
 
-const PRESETS = {
+const PRESETS_TR = {
     "Yemek": [["Pizzacı", "Taş fırında İtalyan pizzası"], ["Burgerci", "Gurme hamburgerler ve çıtır patates"],
         ["Kebapçı", "Zengin meze ve enfes Adana kebap"], ["Sushi Bar", "Uzak doğu lezzetleri ve taze roll'lar"],
         ["Starbucks", "Kahve ve leziz tatlı molası"]],
@@ -35,6 +35,21 @@ const PRESETS = {
     "Eğlence": [["PlayStation Kafe", "FC 24 ve dövüş oyunları kapışması"], ["Karaoke", "Detone olmayı göze alanlar kulübü"],
         ["Kutu Oyunları", "Catan, Tabu veya Monopoly gecesi"], ["Bilardo / Dart", "Hassas atışlar ve rekabet"]]
 };
+
+const PRESETS_EN = {
+    "Yemek": [["Pizzeria", "Italian pizza from a stone oven"], ["Burger Joint", "Gourmet burgers and crispy fries"],
+        ["Kebab House", "Rich mezze and tasty Adana kebab"], ["Sushi Bar", "Far-east flavours and fresh rolls"],
+        ["Coffee Shop", "A coffee and dessert break"]],
+    "Aktivite": [["Bowling", "A group bowling tournament"], ["Cinema", "The newest action movie in theatres"],
+        ["Cafe Chat", "Deep talks in a dim cafe"], ["Concert", "Open-air rock concert thrills"],
+        ["Theatre", "This season's popular comedy play"]],
+    "Film": [["Sci-Fi", "Interstellar journeys and space themes"], ["Comedy", "A laugh-guaranteed comedy"],
+        ["Horror", "A tense story in a dark house"], ["Action / Adventure", "Breathless chases and fight scenes"],
+        ["Romance", "A warm and emotional love story"]],
+    "Eğlence": [["Gaming Cafe", "FC 24 and fighting game showdowns"], ["Karaoke", "A club for those who dare to sing off-key"],
+        ["Board Games", "Catan, Taboo or Monopoly night"], ["Pool / Darts", "Precise shots and rivalry"]]
+};
+const PRESETS = (typeof currentLang !== "undefined" && currentLang === "en") ? PRESETS_EN : PRESETS_TR;
 
 function newId() {
     return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
@@ -74,19 +89,19 @@ function validName(name) {
 
 btnCreateRoom.addEventListener("click", async () => {
     userName = inputName.value.trim();
-    if (!userName) { setFieldError(inputName, "Lütfen adını yaz."); return; }
+    if (!userName) { setFieldError(inputName, t("join.nameRequired")); return; }
     if (!validName(userName)) {
-        setFieldError(inputName, "Sadece harf, rakam ve boşluk kullan (en fazla 15 karakter).");
+        setFieldError(inputName, t("join.nameInvalid"));
         return;
     }
     localStorage.setItem("napsak_user_name", userName);
     const label = btnCreateRoom.innerHTML;
     btnCreateRoom.disabled = true;
-    btnCreateRoom.innerHTML = 'Oluşturuluyor... <i class="fa-solid fa-spinner fa-spin"></i>';
+    btnCreateRoom.innerHTML = t("setup.creating") + ' <i class="fa-solid fa-spinner fa-spin"></i>';
     const { data, error } = await sb.rpc("create_room", { p_name: userName });
     if (error || !data) {
         console.error("create_room failed:", error);
-        alert("Oda oluşturulamadı. Bağlantını kontrol edip tekrar dene.");
+        alert(t("setup.createFailed"));
         btnCreateRoom.disabled = false;
         btnCreateRoom.innerHTML = label;
         return;
@@ -127,14 +142,14 @@ function renderHostLobby() {
     document.getElementById("btn-host-setup").disabled = !everyoneReady;
     document.getElementById("host-ready-hint").classList.toggle("hidden", everyoneReady);
     const n = (roomData.suggestions || []).length;
-    document.getElementById("host-suggestion-count").textContent = n ? n + " öneri geldi, sonraki ekranda görebilirsin." : "";
+    document.getElementById("host-suggestion-count").textContent = n ? t("lobby.suggestionCount", { n }) : "";
 }
 
 document.getElementById("btn-copy-link").addEventListener("click", async () => {
     const link = roomLink();
     try {
-        if (navigator.share) await navigator.share({ title: "N’APSAK?", text: "Odamıza katıl!", url: link });
-        else { await navigator.clipboard.writeText(link); alert("Bağlantı kopyalandı!"); }
+        if (navigator.share) await navigator.share({ title: "N’APSAK?", text: t("lobby.shareText"), url: link });
+        else { await navigator.clipboard.writeText(link); alert(t("lobby.linkCopied")); }
     } catch (e) { /* cancelled */ }
 });
 
@@ -168,7 +183,7 @@ function renderSetup() {
             const b = document.createElement("button");
             b.type = "button";
             b.className = "chip";
-            b.textContent = cat;
+            b.textContent = t("tpl." + cat);
             b.addEventListener("click", () => {
                 addChoices(PRESETS[cat].map(([name, details]) => ({ id: newId(), name, details, category: cat })));
                 renderSetup();
@@ -186,11 +201,11 @@ function renderSetup() {
         b.className = "chip" + (m.id === setupMode ? " selected" : "");
         b.setAttribute("role", "radio");
         b.setAttribute("aria-checked", String(m.id === setupMode));
-        b.textContent = m.label;
+        b.textContent = t("mode." + m.id);
         b.addEventListener("click", () => { setupMode = m.id; renderSetup(); });
         modes.appendChild(b);
     });
-    document.getElementById("setup-mode-hint").textContent = MODES.find(m => m.id === setupMode).hint;
+    document.getElementById("setup-mode-hint").textContent = t("mode." + setupMode + ".hint");
 
     // chosen options
     const list = document.getElementById("setup-list");
@@ -212,7 +227,7 @@ function renderSetup() {
         const remove = document.createElement("button");
         remove.type = "button";
         remove.className = "icon-btn danger";
-        remove.setAttribute("aria-label", c.name + " seçeneğini kaldır");
+        remove.setAttribute("aria-label", t("setup.removeOption", { name: c.name }));
         remove.innerHTML = '<i class="fa-solid fa-xmark"></i>';
         remove.addEventListener("click", () => { setupChoices = setupChoices.filter(x => x.id !== c.id); renderSetup(); });
         row.append(emoji, text, remove);
@@ -240,7 +255,7 @@ function renderSetup() {
         const accept = document.createElement("button");
         accept.type = "button";
         accept.className = "icon-btn ok";
-        accept.setAttribute("aria-label", sug.name + " önerisini listeye ekle");
+        accept.setAttribute("aria-label", t("setup.acceptSuggestion", { name: sug.name }));
         accept.innerHTML = '<i class="fa-solid fa-check"></i>';
         accept.addEventListener("click", () => {
             addChoices([{ id: newId(), name: sug.name, details: sug.details || "", category: "" }]);
@@ -249,7 +264,7 @@ function renderSetup() {
         const dismiss = document.createElement("button");
         dismiss.type = "button";
         dismiss.className = "icon-btn danger";
-        dismiss.setAttribute("aria-label", sug.name + " önerisini reddet");
+        dismiss.setAttribute("aria-label", t("setup.dismissSuggestion", { name: sug.name }));
         dismiss.innerHTML = '<i class="fa-solid fa-xmark"></i>';
         dismiss.addEventListener("click", () => dismissSuggestion(sug.id));
         row.append(text, accept, dismiss);
@@ -280,7 +295,7 @@ document.getElementById("btn-setup-start").addEventListener("click", () => {
     }).then(({ error }) => {
         if (error) {
             console.error("start_voting failed:", error);
-            alert("Oylama başlatılamadı. Bağlantını kontrol edip tekrar dene.");
+            alert(t("setup.startFailed"));
             button.disabled = false;
             return;
         }
@@ -312,7 +327,7 @@ function renderWaiting() {
         return;
     }
     const waiting = Object.values(roomData.participants || {}).filter(p => !p.hasVoted).map(p => p.name);
-    names.textContent = waiting.length ? "Bekleniyor: " + waiting.join(", ") : "";
+    names.textContent = waiting.length ? t("setup.waitingFor", { names: waiting.join(", ") }) : "";
     if (!waiting.length) {
         prompt.classList.add("hidden");
         waitSince = 0;

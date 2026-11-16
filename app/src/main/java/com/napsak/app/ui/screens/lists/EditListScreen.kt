@@ -40,6 +40,8 @@ import java.util.UUID
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.res.stringResource
+import com.napsak.app.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,10 +82,10 @@ fun EditListScreen(
                         listImageUrl = result.url
                     }
                     com.napsak.app.domain.model.UploadResult.FileTooLarge -> {
-                        Toast.makeText(context, "Seçilen dosya çok büyük (Maksimum 10 MB)", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.file_too_big), Toast.LENGTH_LONG).show()
                     }
                     com.napsak.app.domain.model.UploadResult.Failure -> {
-                        Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.upload_failed), Toast.LENGTH_SHORT).show()
                     }
                 }
                 isUploadingListImage = false
@@ -102,10 +104,10 @@ fun EditListScreen(
                         newChoiceImageUrl = result.url
                     }
                     com.napsak.app.domain.model.UploadResult.FileTooLarge -> {
-                        Toast.makeText(context, "Seçilen dosya çok büyük (Maksimum 10 MB)", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.file_too_big), Toast.LENGTH_LONG).show()
                     }
                     com.napsak.app.domain.model.UploadResult.Failure -> {
-                        Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.upload_failed), Toast.LENGTH_SHORT).show()
                     }
                 }
                 isUploadingImage = false
@@ -128,10 +130,10 @@ fun EditListScreen(
                         }
                     }
                     com.napsak.app.domain.model.UploadResult.FileTooLarge -> {
-                        Toast.makeText(context, "Seçilen dosya çok büyük (Maksimum 10 MB)", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.file_too_big), Toast.LENGTH_LONG).show()
                     }
                     com.napsak.app.domain.model.UploadResult.Failure -> {
-                        Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.upload_failed), Toast.LENGTH_SHORT).show()
                     }
                 }
                 uploadingChoiceIds.remove(choiceId)
@@ -155,7 +157,7 @@ fun EditListScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (listId.isBlank()) "Yeni Liste Oluştur" else "Listeyi Düzenle",
+                        text = stringResource(if (listId.isBlank()) R.string.edit_list_new else R.string.edit_list_edit),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleMedium
                     )
@@ -164,7 +166,7 @@ fun EditListScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Geri Dön"
+                            contentDescription = stringResource(R.string.back)
                         )
                     }
                 },
@@ -192,7 +194,7 @@ fun EditListScreen(
                     NapsakTextField(
                         value = listNameInput,
                         onValueChange = { listNameInput = it },
-                        label = "Liste Adı (Örn: Kahve, Yemek)",
+                        label = stringResource(R.string.edit_list_name),
                         leadingIcon = Icons.Default.Edit,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -200,7 +202,7 @@ fun EditListScreen(
                     NapsakTextField(
                         value = listCategoryInput,
                         onValueChange = { listCategoryInput = it },
-                        label = "Liste Kategorisi (Örn: Yemek, Aktivite, Film)",
+                        label = stringResource(R.string.edit_list_category),
                         leadingIcon = Icons.Default.Label,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -239,15 +241,15 @@ fun EditListScreen(
                             } else {
                                 Icon(
                                     imageVector = Icons.Default.Add,
-                                    contentDescription = "Resim Ekle",
+                                    contentDescription = stringResource(R.string.add_image),
                                     tint = CoralPrimary.copy(alpha = 0.6f),
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
                         }
                         Column {
-                            Text("Liste Kapak Resmi", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                            Text("Galeriden kapak resmi seç (isteğe bağlı)", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                            Text(stringResource(R.string.list_cover), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text(stringResource(R.string.list_cover_hint), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
                         }
                     }
                 }
@@ -266,7 +268,7 @@ fun EditListScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Text(
-                                text = "Yeni Seçenek Ekle",
+                                text = stringResource(R.string.add_new_option),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -275,7 +277,7 @@ fun EditListScreen(
                             NapsakTextField(
                                 value = newChoiceName,
                                 onValueChange = { newChoiceName = it },
-                                label = "Seçenek Adı",
+                                label = stringResource(R.string.option_name),
                                 leadingIcon = Icons.Default.Edit,
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -283,7 +285,7 @@ fun EditListScreen(
                             NapsakTextField(
                                 value = newChoiceDetails,
                                 onValueChange = { newChoiceDetails = it },
-                                label = "Açıklama (İsteğe bağlı)",
+                                label = stringResource(R.string.option_details),
                                 leadingIcon = Icons.Default.Info,
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -318,7 +320,7 @@ fun EditListScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Seçeneği Listeye Ekle", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.add_option_to_list), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -331,7 +333,7 @@ fun EditListScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Seçenekler",
+                            text = stringResource(R.string.options),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -340,7 +342,7 @@ fun EditListScreen(
                             contentColor = AmberSecondary
                         ) {
                             Text(
-                                text = "${editingChoices.size} Öğe",
+                                text = stringResource(R.string.items_count, editingChoices.size),
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 fontWeight = FontWeight.Bold
                             )
@@ -357,7 +359,7 @@ fun EditListScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Lütfen listenize en az 1 seçenek ekleyin.",
+                                text = stringResource(R.string.list_needs_option),
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                 ),
@@ -438,7 +440,7 @@ fun EditListScreen(
                                         }
                                         Icon(
                                             imageVector = Icons.Default.Add,
-                                            contentDescription = "Fotoğraf Ekle",
+                                            contentDescription = stringResource(R.string.add_photo),
                                             tint = CoralPrimary,
                                             modifier = Modifier
                                                 .size(12.dp)
@@ -472,7 +474,7 @@ fun EditListScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
-                                    contentDescription = "Sil",
+                                    contentDescription = stringResource(R.string.delete),
                                     tint = Color(0xFFE57373),
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -508,7 +510,7 @@ fun EditListScreen(
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = AmberSecondary)
                 ) {
-                    Text("Kaydet", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(stringResource(R.string.save), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }

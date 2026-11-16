@@ -52,6 +52,9 @@ import androidx.compose.ui.platform.LocalContext
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import java.util.UUID
+import androidx.compose.ui.res.stringResource
+import com.napsak.app.R
+import com.napsak.app.ui.categoryLabel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -89,10 +92,10 @@ fun CreateChoicesScreen(
                         viewModel.onImageUrlChange(result.url)
                     }
                     com.napsak.app.domain.model.UploadResult.FileTooLarge -> {
-                        Toast.makeText(context, "Seçilen dosya çok büyük (Maksimum 10 MB)", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.file_too_big), Toast.LENGTH_LONG).show()
                     }
                     com.napsak.app.domain.model.UploadResult.Failure -> {
-                        Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.upload_failed), Toast.LENGTH_SHORT).show()
                     }
                 }
                 isUploadingImage = false
@@ -112,10 +115,10 @@ fun CreateChoicesScreen(
                         viewModel.updateChoiceImageUrl(choiceId, result.url)
                     }
                     com.napsak.app.domain.model.UploadResult.FileTooLarge -> {
-                        Toast.makeText(context, "Seçilen dosya çok büyük (Maksimum 10 MB)", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.file_too_big), Toast.LENGTH_LONG).show()
                     }
                     com.napsak.app.domain.model.UploadResult.Failure -> {
-                        Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.upload_failed), Toast.LENGTH_SHORT).show()
                     }
                 }
                 uploadingChoiceIds.remove(choiceId)
@@ -135,10 +138,10 @@ fun CreateChoicesScreen(
                         savedListImageUrl = result.url
                     }
                     com.napsak.app.domain.model.UploadResult.FileTooLarge -> {
-                        Toast.makeText(context, "Seçilen dosya çok büyük (Maksimum 10 MB)", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.file_too_big), Toast.LENGTH_LONG).show()
                     }
                     com.napsak.app.domain.model.UploadResult.Failure -> {
-                        Toast.makeText(context, "Yükleme başarısız", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.upload_failed), Toast.LENGTH_SHORT).show()
                     }
                 }
                 isUploadingSavedListImage = false
@@ -186,7 +189,7 @@ fun CreateChoicesScreen(
 
             // Header
             Text(
-                text = "SEÇENEKLERİ OLUŞTUR",
+                text = stringResource(R.string.create_title),
                 style = MaterialTheme.typography.titleSmall.copy(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -199,7 +202,7 @@ fun CreateChoicesScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Oylanacak seçenekleri ekle",
+                text = stringResource(R.string.create_subtitle),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 ),
@@ -211,7 +214,7 @@ fun CreateChoicesScreen(
 
             // Şablon Kategoriler
             Text(
-                text = "Şablon Kategoriler",
+                text = stringResource(R.string.create_templates),
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
@@ -236,7 +239,7 @@ fun CreateChoicesScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = cat,
+                            text = categoryLabel(cat),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = if (isSelected) Color.White else CoralPrimary
@@ -316,7 +319,7 @@ fun CreateChoicesScreen(
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = "${template.choices.size} Se\u00e7enek",
+                                        text = stringResource(R.string.create_tpl_count, template.choices.size),
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                         )
@@ -363,18 +366,18 @@ fun CreateChoicesScreen(
                     NapsakTextField(
                         value = uiState.currentName,
                         onValueChange = { viewModel.onNameChange(it) },
-                        label = "Seçenek adı",
+                        label = stringResource(R.string.create_name_label),
                         leadingIcon = Icons.Default.Edit,
-                        placeholder = "ör: Starbucks, Sinema, Bowling...",
+                        placeholder = stringResource(R.string.create_name_ph),
                         modifier = Modifier.fillMaxWidth()
                     )
 
                     NapsakTextField(
                         value = uiState.currentDetails,
                         onValueChange = { viewModel.onDetailsChange(it) },
-                        label = "Açıklama (isteğe bağlı)",
+                        label = stringResource(R.string.create_details_label),
                         leadingIcon = Icons.Default.Info,
-                        placeholder = "Kısa bir not ekle...",
+                        placeholder = stringResource(R.string.create_details_ph),
                         singleLine = false,
                         maxLines = 2,
                         modifier = Modifier.fillMaxWidth()
@@ -383,9 +386,9 @@ fun CreateChoicesScreen(
                     NapsakTextField(
                         value = uiState.currentCategory,
                         onValueChange = { viewModel.onCategoryChange(it) },
-                        label = "Kategori (isteğe bağlı)",
+                        label = stringResource(R.string.create_category_label),
                         leadingIcon = Icons.Default.Label,
-                        placeholder = "ör: Yemek, Aktivite, Tatlılar...",
+                        placeholder = stringResource(R.string.create_category_ph),
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -408,7 +411,7 @@ fun CreateChoicesScreen(
                                         .padding(horizontal = 10.dp, vertical = 6.dp)
                                 ) {
                                     Text(
-                                        text = cat,
+                                        text = categoryLabel(cat),
                                         style = MaterialTheme.typography.bodySmall.copy(
                                             fontWeight = FontWeight.SemiBold,
                                             color = if (uiState.currentCategory == cat) CoralPrimary else MaterialTheme.colorScheme.onSurface
@@ -431,7 +434,7 @@ fun CreateChoicesScreen(
                                 shape = RoundedCornerShape(14.dp),
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Gray)
                             ) {
-                                Text("İptal", fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.cancel_edit), fontWeight = FontWeight.Bold)
                             }
                         }
 
@@ -456,7 +459,7 @@ fun CreateChoicesScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (uiState.isEditing) "Kaydet" else "Seçenek Ekle",
+                                text = stringResource(if (uiState.isEditing) R.string.save else R.string.create_add_option),
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -490,7 +493,7 @@ fun CreateChoicesScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Seçilenler",
+                        text = stringResource(R.string.create_selected),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold
                         )
@@ -499,7 +502,7 @@ fun CreateChoicesScreen(
                         // Clear All Button
                         if (uiState.choices.isNotEmpty()) {
                             Text(
-                                text = "Temizle",
+                                text = stringResource(R.string.clear),
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFFE57373)
@@ -524,7 +527,7 @@ fun CreateChoicesScreen(
                         disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     )
                 ) {
-                    Text("Listeyi Kaydet", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.create_save_list), fontWeight = FontWeight.Bold)
                 }
 
                 // Listelerim Butonu
@@ -532,7 +535,7 @@ fun CreateChoicesScreen(
                     onClick = { showLoadDialog = true },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
                 ) {
-                    Text("Listelerim", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.create_my_lists), fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -553,7 +556,7 @@ fun CreateChoicesScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Henüz seçenek eklenmedi",
+                            text = stringResource(R.string.create_empty),
                             style = MaterialTheme.typography.bodyLarge.copy(
                                   fontWeight = FontWeight.SemiBold,
                                   color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
@@ -561,7 +564,7 @@ fun CreateChoicesScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Yukarıdan şablon yükle veya kendin ekle",
+                            text = stringResource(R.string.create_empty_hint),
                             style = MaterialTheme.typography.bodySmall.copy(
                                   color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
                             )
@@ -576,7 +579,7 @@ fun CreateChoicesScreen(
                 ) {
                     groupedChoices.forEach { (category, choicesInCategory) ->
                         Text(
-                            text = if (category.isBlank()) "GENEL" else category.uppercase(),
+                            text = if (category.isBlank()) stringResource(R.string.cat_general) else category.uppercase(),
                             style = MaterialTheme.typography.labelLarge.copy(
                                 fontWeight = FontWeight.ExtraBold,
                                 color = if (category.isBlank()) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f) else CoralPrimary,
@@ -616,7 +619,7 @@ fun CreateChoicesScreen(
                 viewModel.startVoting(
                     roomId,
                     onFailure = {
-                        Toast.makeText(context, "Oylama başlatılamadı, tekrar dene", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.create_start_failed), Toast.LENGTH_SHORT).show()
                     }
                 ) {
                     onNavigateToVoting(roomId, viewModel.getChoices(), uiState.voteMode)
@@ -634,19 +637,19 @@ fun CreateChoicesScreen(
                 listCategoryInput = ""
                 savedListImageUrl = ""
             },
-            title = { Text("Listeyi Şablon Olarak Kaydet") },
+            title = { Text(stringResource(R.string.save_list_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     NapsakTextField(
                         value = listNameInput,
                         onValueChange = { listNameInput = it },
-                        label = "Liste Adı",
+                        label = stringResource(R.string.save_list_name),
                         leadingIcon = Icons.Default.Edit
                     )
                     NapsakTextField(
                         value = listCategoryInput,
                         onValueChange = { listCategoryInput = it },
-                        label = "Kategori",
+                        label = stringResource(R.string.save_list_category),
                         leadingIcon = Icons.Default.Label
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -683,15 +686,15 @@ fun CreateChoicesScreen(
                             } else {
                                 Icon(
                                     imageVector = Icons.Default.Add,
-                                    contentDescription = "Resim Ekle",
+                                    contentDescription = stringResource(R.string.add_image),
                                     tint = CoralPrimary.copy(alpha = 0.6f),
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
                         }
                         Column {
-                            Text("Liste Kapak Resmi", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                            Text("Galeriden resim seç (isteğe bağlı)", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                            Text(stringResource(R.string.list_cover), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text(stringResource(R.string.save_list_cover_hint), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
                         }
                     }
                 }
@@ -709,7 +712,7 @@ fun CreateChoicesScreen(
                     },
                     enabled = listNameInput.isNotBlank() && !isUploadingSavedListImage
                 ) {
-                    Text("Kaydet")
+                    Text(stringResource(R.string.save))
                 }
             },
             dismissButton = {
@@ -721,7 +724,7 @@ fun CreateChoicesScreen(
                         savedListImageUrl = ""
                     }
                 ) {
-                    Text("İptal")
+                    Text(stringResource(R.string.cancel))
                 }
             },
             shape = RoundedCornerShape(20.dp)
@@ -732,7 +735,7 @@ fun CreateChoicesScreen(
     if (showLoadDialog) {
         AlertDialog(
             onDismissRequest = { showLoadDialog = false },
-            title = { Text("Kayıtlı Listelerim") },
+            title = { Text(stringResource(R.string.saved_lists_title)) },
             text = {
                 if (uiState.savedLists.isEmpty()) {
                     Box(
@@ -742,7 +745,7 @@ fun CreateChoicesScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Henüz kayıtlı bir listeniz yok.",
+                            text = stringResource(R.string.lists_empty),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
@@ -826,7 +829,7 @@ fun CreateChoicesScreen(
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(
-                                            text = "${savedList.choices.size} seçenek içeriyor",
+                                            text = stringResource(R.string.saved_list_contains, savedList.choices.size),
                                             style = MaterialTheme.typography.bodySmall.copy(
                                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                             )
@@ -838,7 +841,7 @@ fun CreateChoicesScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Delete,
-                                            contentDescription = "Sil",
+                                            contentDescription = stringResource(R.string.delete),
                                             tint = Color(0xFFE57373)
                                         )
                                     }
@@ -850,7 +853,7 @@ fun CreateChoicesScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showLoadDialog = false }) {
-                    Text("Kapat")
+                    Text(stringResource(R.string.close))
                 }
             },
             shape = RoundedCornerShape(20.dp)
@@ -926,7 +929,7 @@ private fun ChoiceListItem(
                         }
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Fotoğraf Ekle",
+                            contentDescription = stringResource(R.string.add_photo),
                             tint = CoralPrimary,
                             modifier = Modifier
                                 .size(12.dp)
@@ -977,7 +980,7 @@ private fun ChoiceListItem(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = "D\u00fczenle",
+                        contentDescription = stringResource(R.string.edit),
                         tint = AmberSecondary,
                         modifier = Modifier.size(15.dp)
                     )
@@ -994,7 +997,7 @@ private fun ChoiceListItem(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Kald\u0131r",
+                        contentDescription = stringResource(R.string.remove),
                         tint = Color(0xFFE57373),
                         modifier = Modifier.size(15.dp)
                     )

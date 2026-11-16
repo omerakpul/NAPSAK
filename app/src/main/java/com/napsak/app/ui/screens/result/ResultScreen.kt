@@ -43,6 +43,8 @@ import com.napsak.app.domain.model.Choice
 import com.napsak.app.ui.screens.shared.SharedSessionViewModel
 import com.napsak.app.ui.theme.CoralPrimary
 import com.napsak.app.ui.theme.CoralPrimaryDark
+import androidx.compose.ui.res.stringResource
+import com.napsak.app.R
 
 @Composable
 fun ResultScreen(
@@ -54,7 +56,7 @@ fun ResultScreen(
     val winnerChoice by sharedViewModel.winnerChoice.collectAsState()
     val currentRoom by sharedViewModel.currentRoom.collectAsState()
 
-    val unit = if (currentRoom?.voteMode == VoteMode.RANK) "Puan" else "Oy"
+    val unit = stringResource(if (currentRoom?.voteMode == VoteMode.RANK) R.string.unit_points_cap else R.string.unit_votes_cap)
     val choices = currentRoom?.choices?.values?.toList() ?: emptyList()
     val maxVotes = choices.maxOfOrNull { it.voteCount } ?: 0
     val candidates = if (maxVotes > 0) {
@@ -136,7 +138,7 @@ fun ResultScreen(
                 // Celebratory Header
                 Text(
                     modifier = Modifier.semantics { heading(); liveRegion = LiveRegionMode.Polite },
-                    text = if (isRaffleActive) "🎲 KURA ÇEKİLİYOR... 🎲" else "🎉 KAZANAN SEÇENEK 🎉",
+                    text = stringResource(if (isRaffleActive) R.string.result_raffle_title else R.string.result_winner_title),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
@@ -147,7 +149,7 @@ fun ResultScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = if (isRaffleActive) "Eşitlik durumunda kura çekiliyor:" else "Grup kararını verdi! Bu akşam buradayız:",
+                    text = stringResource(if (isRaffleActive) R.string.result_raffle_sub else R.string.result_winner_sub),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                     ),
@@ -220,7 +222,7 @@ fun ResultScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
 
                                 Text(
-                                    text = if (isRaffleActive) "Kura çekimi yapılıyor..." else winner.details,
+                                    text = if (isRaffleActive) stringResource(R.string.result_raffle_running) else winner.details,
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                     )
@@ -265,7 +267,7 @@ fun ResultScreen(
                             if (winner.details.isNotBlank() || isRaffleActive) {
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
-                                    text = if (isRaffleActive) "Kura çekimi yapılıyor..." else winner.details,
+                                    text = if (isRaffleActive) stringResource(R.string.result_raffle_running) else winner.details,
                                     style = MaterialTheme.typography.bodyLarge.copy(
                                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                         textAlign = TextAlign.Center
@@ -319,12 +321,12 @@ fun ResultScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Place,
-                                    contentDescription = "Maps",
+                                    contentDescription = stringResource(R.string.maps_cd),
                                     tint = Color.White
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Haritada Aç",
+                                    text = stringResource(R.string.result_maps),
                                     style = MaterialTheme.typography.bodyLarge.copy(
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
@@ -351,9 +353,9 @@ fun ResultScreen(
                             .height(52.dp),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Share, contentDescription = "Paylaş")
+                        Icon(imageVector = Icons.Default.Share, contentDescription = stringResource(R.string.share_cd))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Sonucu Paylaş", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.result_share), fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -383,12 +385,12 @@ fun ResultScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Home,
-                                contentDescription = "Home",
+                                contentDescription = stringResource(R.string.home_cd),
                                 tint = Color.White
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Ana Sayfaya Dön",
+                                text = stringResource(R.string.result_home),
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White

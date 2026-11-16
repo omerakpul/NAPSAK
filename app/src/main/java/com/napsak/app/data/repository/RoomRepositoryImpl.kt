@@ -40,6 +40,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.napsak.app.domain.model.RoomError
 
 @Singleton
 class RoomRepositoryImpl @Inject constructor(
@@ -53,9 +54,9 @@ class RoomRepositoryImpl @Inject constructor(
         supabase.postgrest.rpc(function, params)
 
     private fun Throwable.friendly(): Throwable = when {
-        message?.contains("room not found", ignoreCase = true) == true -> Exception("Oda bulunamadı")
-        message?.contains("voting already started", ignoreCase = true) == true -> Exception("Oylama başladı, odaya girilemez")
-        message?.contains("room is full", ignoreCase = true) == true -> Exception("Oda dolu")
+        message?.contains("room not found", ignoreCase = true) == true -> RoomError(RoomError.Kind.NOT_FOUND, "Room not found")
+        message?.contains("voting already started", ignoreCase = true) == true -> RoomError(RoomError.Kind.VOTING_STARTED, "Voting already started")
+        message?.contains("room is full", ignoreCase = true) == true -> RoomError(RoomError.Kind.FULL, "Room is full")
         else -> this
     }
 
@@ -81,7 +82,7 @@ class RoomRepositoryImpl @Inject constructor(
             val userId = session.userId()
             userPreferencesDataSource.saveUserCredentials(userId, hostName)
             val code = rpc("create_room", buildJsonObject { put("p_name", hostName) }).decodeAs<String>()
-            fetchRoom(code) ?: throw Exception("Oda okunamadı")
+            fetchRoom(code) ?: throw RoomError(RoomError.Kind.UNREADABLE, "Room unreadable")
         }.recoverCatching { throw it.friendly() })
     }
 
@@ -93,7 +94,7 @@ class RoomRepositoryImpl @Inject constructor(
                 put("p_room", roomId)
                 put("p_name", participantName)
             })
-            fetchRoom(roomId) ?: throw Exception("Oda okunamadı")
+            fetchRoom(roomId) ?: throw RoomError(RoomError.Kind.UNREADABLE, "Room unreadable")
         }.recoverCatching { throw it.friendly() })
     }
 

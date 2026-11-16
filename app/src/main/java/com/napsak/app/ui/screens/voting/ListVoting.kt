@@ -47,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.napsak.app.domain.model.Choice
 import com.napsak.app.ui.OptionEmoji
+import androidx.compose.ui.res.stringResource
+import com.napsak.app.R
 
 @Composable
 private fun ChoiceThumb(choice: Choice) {
@@ -121,7 +123,7 @@ fun SingleChoiceVoting(choices: List<Choice>, onSubmit: (Choice) -> Unit) {
             enabled = selectedId != null,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(16.dp)
-        ) { Text("Oyumu Gönder", fontWeight = FontWeight.Bold) }
+        ) { Text(stringResource(R.string.submit_vote), fontWeight = FontWeight.Bold) }
     }
 }
 
@@ -166,12 +168,12 @@ fun RankingVoting(choices: List<Choice>, onSubmit: (List<Choice>) -> Unit) {
                                 onClick = { order.add(index - 1, order.removeAt(index)) },
                                 enabled = index > 0,
                                 modifier = Modifier.size(48.dp)
-                            ) { Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Yukarı al") }
+                            ) { Icon(Icons.Default.KeyboardArrowUp, contentDescription = stringResource(R.string.move_up)) }
                             IconButton(
                                 onClick = { order.add(index + 1, order.removeAt(index)) },
                                 enabled = index < order.lastIndex,
                                 modifier = Modifier.size(48.dp)
-                            ) { Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Aşağı al") }
+                            ) { Icon(Icons.Default.KeyboardArrowDown, contentDescription = stringResource(R.string.move_down)) }
                         }
                     }
                 }
@@ -182,6 +184,6 @@ fun RankingVoting(choices: List<Choice>, onSubmit: (List<Choice>) -> Unit) {
             onClick = { onSubmit(order.toList()) },
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(16.dp)
-        ) { Text("Sıralamayı Gönder", fontWeight = FontWeight.Bold) }
+        ) { Text(stringResource(R.string.submit_ranking), fontWeight = FontWeight.Bold) }
     }
 }

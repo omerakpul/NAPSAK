@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#12161A">
-    <meta name="description" content="N'APSAK? - Arkadaşlarınla ne yapacağına birlikte karar ver.">
+    <meta name="theme-color" content="#0F0E17">
+    <meta name="description" content="N'APSAK? - Arkadaşlarınla ne yapacağına birlikte karar ver." data-i18n-content="meta.description">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%237C3AED'/%3E%3Ctext x='50' y='72' font-size='64' font-family='Arial,sans-serif' font-weight='700' text-anchor='middle' fill='white'%3E?%3C/text%3E%3C/svg%3E">
-    <title>N'APSAK? - Birlikte Karar Verin</title>
+    <title data-i18n="meta.title">N'APSAK? - Birlikte Karar Verin</title>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="style.css?v=1.4.0">
+    <link rel="stylesheet" href="style.css?v=1.5.0">
     
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -29,7 +29,7 @@
 <body>
     <!-- Connection status (announced to screen readers) -->
     <div id="net-banner" class="net-banner hidden" role="status" aria-live="polite">
-        <i class="fa-solid fa-wifi" aria-hidden="true"></i> Bağlantı yok. Yeniden bağlanınca devam edecek…
+        <i class="fa-solid fa-wifi" aria-hidden="true"></i> <span data-i18n="net.offline">Bağlantı yok. Yeniden bağlanınca devam edecek…</span>
     </div>
 
     <div class="app-container">
@@ -42,49 +42,54 @@
             <div class="brand">
                 <span class="logo-emoji">🍔</span>
                 <h1 class="logo-text">N'APSAK?</h1>
-                <p class="brand-tagline">Arkadaşlarınla ne yapacağına anında karar ver!</p>
+                <p class="brand-tagline" data-i18n="join.tagline">Arkadaşlarınla ne yapacağına anında karar ver!</p>
             </div>
             
             <div class="card glass">
-                <h2>Odaya Katıl</h2>
+                <h2 data-i18n="join.title">Odaya Katıl</h2>
                 <div class="input-group">
-                    <label for="input-name">Adın</label>
+                    <label for="input-name" data-i18n="join.name">Adın</label>
                     <div class="input-wrap">
                         <i class="fa-solid fa-user field-icon" aria-hidden="true"></i>
-                        <input type="text" id="input-name" placeholder="Örn: Ahmet" autocomplete="off" maxlength="15" aria-describedby="err-name">
-                        <button type="button" class="field-clear hidden" aria-label="Temizle"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                        <input type="text" id="input-name" placeholder="Örn: Ahmet" data-i18n-placeholder="join.namePh" autocomplete="off" maxlength="15" aria-describedby="err-name">
+                        <button type="button" class="field-clear hidden" aria-label="Temizle" data-i18n-aria="common.clear"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
                     </div>
                     <div class="field-meta"><span class="field-error" id="err-name" role="alert"></span><span class="counter"></span></div>
                 </div>
                 
                 <div class="input-group">
-                    <label for="input-room">Oda Kodu</label>
+                    <label for="input-room" data-i18n="join.room">Oda Kodu</label>
                     <div class="input-wrap">
                         <i class="fa-solid fa-key field-icon" aria-hidden="true"></i>
-                        <input type="tel" id="input-room" inputmode="numeric" placeholder="6 Haneli Kod" autocomplete="off" maxlength="6" aria-describedby="err-room">
-                        <button type="button" class="field-clear hidden" aria-label="Temizle"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                        <input type="tel" id="input-room" inputmode="numeric" placeholder="6 Haneli Kod" data-i18n-placeholder="join.roomPh" autocomplete="off" maxlength="6" aria-describedby="err-room">
+                        <button type="button" class="field-clear hidden" aria-label="Temizle" data-i18n-aria="common.clear"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
                     </div>
                     <div class="field-meta"><span class="field-error" id="err-room" role="alert"></span><span class="counter"></span></div>
                 </div>
                 
-                <button id="btn-join" class="btn-primary">Katıl <i class="fa-solid fa-right-to-bracket"></i></button>
+                <button id="btn-join" class="btn-primary"><span data-i18n="join.btn">Katıl</span> <i class="fa-solid fa-right-to-bracket"></i></button>
 
-                <div class="or-divider"><span>veya</span></div>
-                <button id="btn-create-room" class="btn-secondary" disabled>Yeni Oda Oluştur <i class="fa-solid fa-plus"></i></button>
+                <div class="or-divider"><span data-i18n="join.or">veya</span></div>
+                <button id="btn-create-room" class="btn-secondary" disabled><span data-i18n="join.create">Yeni Oda Oluştur</span> <i class="fa-solid fa-plus"></i></button>
+                <div class="lang-switch" role="group" aria-label="Language / Dil">
+                    <button type="button" onclick="setLanguage('tr')">Türkçe</button>
+                    <span aria-hidden="true">·</span>
+                    <button type="button" onclick="setLanguage('en')">English</button>
+                </div>
             </div>
         </section>
 
         <!-- Screen 2: Lobby -->
         <section id="screen-lobby" class="screen">
             <div class="header">
-                <span class="badge">Bekleme Lobisi</span>
-                <h1 id="lobby-room-code">Oda: ------</h1>
+                <span class="badge" data-i18n="lobby.badge">Bekleme Lobisi</span>
+                <h1 id="lobby-room-code">------</h1>
             </div>
             
             <div class="card glass">
                 <div class="participants-header">
-                    <h3>Katılımcılar (<span id="participant-count">0</span>)</h3>
-                    <span id="ready-ratio" class="ready-ratio">Hazır: 0/0</span>
+                    <h3><span data-i18n="lobby.participants">Katılımcılar</span> (<span id="participant-count">0</span>)</h3>
+                    <span id="ready-ratio" class="ready-ratio">0/0</span>
                 </div>
                 <div id="participants-list" class="list-container">
                     <!-- Dynamic participants list will go here -->
@@ -93,81 +98,81 @@
             
             <!-- Host-only tools: share the room and open the option setup -->
             <div id="host-lobby-tools" class="card glass host-tools hidden">
-                <h3>Odayı paylaş</h3>
+                <h3 data-i18n="lobby.share">Odayı paylaş</h3>
                 <div class="share-row">
-                    <div id="host-qr" class="host-qr" role="img" aria-label="Odaya katılmak için QR kodu"></div>
+                    <div id="host-qr" class="host-qr" role="img" aria-label="Odaya katılmak için QR kodu" data-i18n-aria="lobby.qrLabel"></div>
                     <div class="share-info">
                         <p id="host-link" class="host-link"></p>
-                        <button id="btn-copy-link" class="btn-secondary" type="button">Bağlantıyı kopyala <i class="fa-solid fa-copy"></i></button>
+                        <button id="btn-copy-link" class="btn-secondary" type="button"><span data-i18n="lobby.copyLink">Bağlantıyı kopyala</span> <i class="fa-solid fa-copy"></i></button>
                     </div>
                 </div>
                 <p id="host-suggestion-count" class="suggest-hint"></p>
-                <button id="btn-host-setup" class="btn-primary" disabled>Oylamayı Başlat <i class="fa-solid fa-play"></i></button>
-                <p id="host-ready-hint" class="suggest-hint">Oylamayı başlatmak için tüm katılımcıların hazır olması bekleniyor.</p>
+                <button id="btn-host-setup" class="btn-primary" disabled><span data-i18n="lobby.start">Oylamayı Başlat</span> <i class="fa-solid fa-play"></i></button>
+                <p id="host-ready-hint" class="suggest-hint" data-i18n="lobby.hostReadyHint">Oylamayı başlatmak için tüm katılımcıların hazır olması bekleniyor.</p>
             </div>
 
             <div id="suggest-card" class="card glass suggest-card">
-                <h3>Bir seçenek öner</h3>
-                <p class="suggest-hint">Önerin oda sahibine iletilir (en fazla 5).</p>
+                <h3 data-i18n="lobby.suggestTitle">Bir seçenek öner</h3>
+                <p class="suggest-hint" data-i18n="lobby.suggestHint">Önerin oda sahibine iletilir (en fazla 5).</p>
                 <div class="input-group">
-                    <label for="input-suggest">Seçenek adı</label>
+                    <label for="input-suggest" data-i18n="lobby.suggestLabel">Seçenek adı</label>
                     <div class="input-wrap">
                         <i class="fa-solid fa-pen field-icon" aria-hidden="true"></i>
-                        <input type="text" id="input-suggest" placeholder="Örn: Sushi Bar" maxlength="100" autocomplete="off">
-                        <button type="button" class="field-clear hidden" aria-label="Temizle"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                        <input type="text" id="input-suggest" placeholder="Örn: Sushi Bar" data-i18n-placeholder="lobby.suggestPh" maxlength="100" autocomplete="off">
+                        <button type="button" class="field-clear hidden" aria-label="Temizle" data-i18n-aria="common.clear"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
                     </div>
                     <div class="field-meta"><span class="field-error" role="alert"></span><span class="counter"></span></div>
                 </div>
-                <button id="btn-suggest" class="btn-secondary">Öneriyi Gönder</button>
+                <button id="btn-suggest" class="btn-secondary" data-i18n="lobby.suggestSend">Öneriyi Gönder</button>
                 <div id="my-suggestions" class="my-suggestions"></div>
             </div>
 
             <div class="action-footer">
-                <button id="btn-ready" class="btn-secondary">Hazır Durumuna Geç <i class="fa-solid fa-circle-check"></i></button>
-                <p class="waiting-message"><i class="fa-solid fa-spinner fa-spin"></i> Oda sahibinin oylamayı başlatması bekleniyor...</p>
+                <button id="btn-ready" class="btn-secondary"><span data-i18n="lobby.ready">Hazır Durumuna Geç</span> <i class="fa-solid fa-circle-check"></i></button>
+                <p class="waiting-message"><i class="fa-solid fa-spinner fa-spin"></i> <span data-i18n="lobby.waitingHost">Oda sahibinin oylamayı başlatması bekleniyor...</span></p>
             </div>
         </section>
 
         <!-- Host: build the option list and pick the vote mode -->
         <section id="screen-setup" class="screen">
             <div class="header">
-                <span class="badge">Seçenekleri Oluştur</span>
-                <h1>Neyi oylayacağız?</h1>
+                <span class="badge" data-i18n="setup.badge">Seçenekleri Oluştur</span>
+                <h1 data-i18n="setup.title">Neyi oylayacağız?</h1>
             </div>
 
             <div id="setup-suggestions" class="card glass hidden">
-                <h3>Arkadaşlarından öneriler</h3>
+                <h3 data-i18n="setup.suggestions">Arkadaşlarından öneriler</h3>
                 <div id="setup-suggestions-list" class="setup-list"></div>
             </div>
 
             <div class="card glass">
-                <h3>Şablon ekle</h3>
+                <h3 data-i18n="setup.templates">Şablon ekle</h3>
                 <div id="setup-templates" class="chip-row"></div>
-                <h3 class="setup-sub">Toplu ekle</h3>
-                <p class="suggest-hint">Her satıra bir seçenek yaz. İstersen <b>Ad - açıklama</b> biçimini kullan.</p>
+                <h3 class="setup-sub" data-i18n="setup.bulk">Toplu ekle</h3>
+                <p class="suggest-hint" data-i18n-html="setup.bulkHint">Her satıra bir seçenek yaz. İstersen <b>Ad - açıklama</b> biçimini kullan.</p>
                 <div class="input-group">
-                    <label for="setup-bulk">Seçenekler (her satıra bir tane)</label>
+                    <label for="setup-bulk" data-i18n="setup.bulkLabel">Seçenekler (her satıra bir tane)</label>
                     <div class="input-wrap">
                         <textarea id="setup-bulk" class="setup-textarea" rows="4" placeholder="Pizza&#10;Burger - gurme hamburger&#10;Sushi"></textarea>
                     </div>
                 </div>
-                <button id="btn-setup-add" class="btn-secondary" type="button">Satırları Ekle <i class="fa-solid fa-plus"></i></button>
+                <button id="btn-setup-add" class="btn-secondary" type="button"><span data-i18n="setup.addLines">Satırları Ekle</span> <i class="fa-solid fa-plus"></i></button>
             </div>
 
             <div class="card glass">
-                <h3>Seçenekler (<span id="setup-count">0</span>)</h3>
+                <h3><span data-i18n="setup.options">Seçenekler</span> (<span id="setup-count">0</span>)</h3>
                 <div id="setup-list" class="setup-list"></div>
             </div>
 
             <div class="card glass">
-                <h3>Oylama şekli</h3>
-                <div id="setup-modes" class="segmented" role="radiogroup" aria-label="Oylama şekli"></div>
+                <h3 data-i18n="setup.mode">Oylama şekli</h3>
+                <div id="setup-modes" class="segmented" role="radiogroup" aria-label="Oylama şekli" data-i18n-aria="setup.mode"></div>
                 <p id="setup-mode-hint" class="suggest-hint"></p>
             </div>
 
             <div class="action-footer">
-                <button id="btn-setup-start" class="btn-primary" disabled>Oylamaya Geç <i class="fa-solid fa-arrow-right"></i></button>
-                <button id="btn-setup-back" class="btn-text" type="button">Lobiye dön</button>
+                <button id="btn-setup-start" class="btn-primary" disabled><span data-i18n="setup.start">Oylamaya Geç</span> <i class="fa-solid fa-arrow-right"></i></button>
+                <button id="btn-setup-back" class="btn-text" type="button" data-i18n="setup.back">Lobiye dön</button>
             </div>
         </section>
 
@@ -175,8 +180,8 @@
         <section id="screen-voting" class="screen">
             <div class="header">
                 <div class="voting-header-row">
-                    <span class="badge">Oylama Başladı</span>
-                    <span id="voting-timer" class="voting-timer-badge" role="timer" aria-live="off">Kalan Süre: 0s</span>
+                    <span class="badge" data-i18n="vote.badge">Oylama Başladı</span>
+                    <span id="voting-timer" class="voting-timer-badge" role="timer" aria-live="off">0s</span>
                 </div>
                 <div class="progress-bar-container">
                     <div id="voting-progress" class="progress-text" aria-live="polite">0 / 0</div>
@@ -195,23 +200,23 @@
             <div id="list-voting" class="list-voting hidden">
                 <p id="list-voting-hint" class="list-voting-hint"></p>
                 <div id="list-voting-items" class="list-voting-items"></div>
-                <button id="btn-submit-list" class="btn-primary">Oyumu Gönder</button>
+                <button id="btn-submit-list" class="btn-primary" data-i18n="vote.submitSingle">Oyumu Gönder</button>
             </div>
 
             <!-- Fallback indicator when all cards are swiped -->
             <div id="voting-finished-placeholder" class="voting-finished-card glass hidden">
                 <div class="finished-content">
                     <span class="finished-emoji">🎉</span>
-                    <h2>Oylamayı Bitirdin!</h2>
-                    <p id="voting-finished-text">Oyların kaydedildi. Diğer katılımcıların oylamayı tamamlaması bekleniyor...</p>
-                    <p id="web-finished-count" class="finished-count-text">Tamamlanan: 0/0</p>
+                    <h2 data-i18n="vote.doneTitle">Oylamayı Bitirdin!</h2>
+                    <p id="voting-finished-text" data-i18n="vote.doneText">Oyların kaydedildi. Diğer katılımcıların oylamayı tamamlaması bekleniyor...</p>
+                    <p id="web-finished-count" class="finished-count-text">0/0</p>
                     <p id="waiting-names" class="waiting-names" aria-live="polite"></p>
                     <p id="vote-send-status" class="vote-send-status" role="status" aria-live="polite"></p>
                     <div id="host-wait-prompt" class="host-wait-prompt hidden">
-                        <p>Bazı oyuncular hâlâ oy vermedi. Bekleyelim mi?</p>
+                        <p data-i18n="vote.idlePrompt">Bazı oyuncular hâlâ oy vermedi. Bekleyelim mi?</p>
                         <div class="prompt-buttons">
-                            <button id="btn-wait-more" class="btn-secondary" type="button">Bekle</button>
-                            <button id="btn-finish-now" class="btn-primary" type="button">Sonuçları göster</button>
+                            <button id="btn-wait-more" class="btn-secondary" type="button" data-i18n="vote.wait">Bekle</button>
+                            <button id="btn-finish-now" class="btn-primary" type="button" data-i18n="vote.showResults">Sonuçları göster</button>
                         </div>
                     </div>
                     <div class="loader-ring"></div>
@@ -220,41 +225,42 @@
             
             <!-- Action buttons underneath cards -->
             <div id="voting-actions" class="voting-actions">
-                <button id="btn-dislike" class="action-btn btn-dislike" title="Pas Geç" aria-label="Pas geç"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-                <button id="btn-like" class="action-btn btn-like" title="Beğen" aria-label="Beğen"><i class="fa-solid fa-heart" aria-hidden="true"></i></button>
+                <button id="btn-dislike" class="action-btn btn-dislike" title="Pas Geç" aria-label="Pas geç" data-i18n-title="vote.pass" data-i18n-aria="vote.pass"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                <button id="btn-like" class="action-btn btn-like" title="Beğen" aria-label="Beğen" data-i18n-title="vote.like" data-i18n-aria="vote.like"><i class="fa-solid fa-heart" aria-hidden="true"></i></button>
             </div>
         </section>
 
         <!-- Screen 4: Result -->
         <section id="screen-result" class="screen">
             <div class="header">
-                <span id="result-badge" class="badge success">Karar Verildi!</span>
-                <h1 id="result-title">Kazanan Seçenek</h1>
+                <span id="result-badge" class="badge success" data-i18n="result.badge">Karar Verildi!</span>
+                <h1 id="result-title" data-i18n="result.title">Kazanan Seçenek</h1>
             </div>
             
             <div class="winner-card glass">
                 <div id="winner-image-container" class="winner-image-container">
-                    <img id="winner-image" src="" alt="Kazanan Resim">
+                    <img id="winner-image" src="" alt="Kazanan Resim" data-i18n-alt="result.imageAlt">
                 </div>
                 <div class="winner-info">
                     <div class="winner-header-row">
-                        <h2 id="winner-name">Restoran Adı</h2>
-                        <span id="winner-votes-badge" class="winner-votes-badge-inline"><i class="fa-solid fa-fire"></i> <span id="winner-votes">0</span> <span id="winner-unit">Oy</span></span>
+                        <h2 id="winner-name">-</h2>
+                        <span id="winner-votes-badge" class="winner-votes-badge-inline"><i class="fa-solid fa-fire"></i> <span id="winner-votes">0</span> <span id="winner-unit" data-i18n="result.unitVote">Oy</span></span>
                     </div>
-                    <p id="winner-details">Açıklama ve detaylar buraya gelecek.</p>
+                    <p id="winner-details"></p>
                 </div>
             </div>
             
             <div class="action-footer">
-                <button id="btn-share" class="btn-secondary">Sonucu Paylaş <i class="fa-solid fa-share-nodes"></i></button>
-                <a id="btn-maps" class="btn-primary maps-link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-map-location-dot"></i> Haritada Aç</a>
-                <button id="btn-reset" class="btn-text">Ana Sayfaya Dön</button>
+                <button id="btn-share" class="btn-secondary"><span data-i18n="result.share">Sonucu Paylaş</span> <i class="fa-solid fa-share-nodes"></i></button>
+                <a id="btn-maps" class="btn-primary maps-link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-map-location-dot"></i> <span data-i18n="result.maps">Haritada Aç</span></a>
+                <button id="btn-reset" class="btn-text" data-i18n="result.home">Ana Sayfaya Dön</button>
             </div>
         </section>
     </div>
     
     <!-- Application Logic -->
-    <script src="app.js?v=2.3.0"></script>
-    <script src="host.js?v=2.3.0"></script>
+    <script src="i18n.js?v=1.0.0"></script>
+    <script src="app.js?v=2.4.0"></script>
+    <script src="host.js?v=2.4.0"></script>
 </body>
 </html>

@@ -50,6 +50,8 @@ import com.napsak.app.ui.screens.shared.SharedSessionViewModel
 import com.napsak.app.ui.theme.NAPSAKTheme
 
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.compose.ui.res.stringResource
+import com.napsak.app.R
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -82,9 +84,9 @@ class MainActivity : ComponentActivity() {
                 val currentDestination = navBackStackEntry?.destination
 
                 val tabs = listOf(
-                    Triple("Ana Sayfa", Icons.Default.Home, Screen.Home as Screen),
-                    Triple("Listeler", Icons.Default.List, Screen.Lists as Screen),
-                    Triple("Geçmiş", Icons.Default.History, Screen.History as Screen)
+                    Triple(stringResource(R.string.tab_home), Icons.Default.Home, Screen.Home as Screen),
+                    Triple(stringResource(R.string.tab_lists), Icons.Default.List, Screen.Lists as Screen),
+                    Triple(stringResource(R.string.tab_history), Icons.Default.History, Screen.History as Screen)
                 )
                 fun isSelected(screen: Screen): Boolean = when (screen) {
                     Screen.Home -> currentDestination?.hasRoute<Screen.Home>() == true
