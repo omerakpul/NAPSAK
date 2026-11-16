@@ -32,6 +32,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material.icons.filled.Share
 import com.napsak.app.domain.model.VoteMode
 import com.napsak.app.ui.OptionEmoji
@@ -100,6 +103,7 @@ fun ResultScreen(
     }
 
     val winner = displayedChoice ?: winnerChoice!!
+    val winnerCardHeight = (LocalConfiguration.current.screenHeightDp * 0.55f).dp.coerceIn(280.dp, 560.dp)
 
     // Keep a private on-device record of every finished decision
     LaunchedEffect(isRaffleActive, winnerChoice) {
@@ -118,6 +122,7 @@ fun ResultScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
@@ -155,7 +160,11 @@ fun ResultScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .fillMaxHeight(0.65f),
+                        .then(
+                            // a photo needs a definite height; a text-only card may grow with large fonts
+                            if (!winner.imageUrl.isNullOrBlank()) Modifier.height(winnerCardHeight)
+                            else Modifier.heightIn(min = winnerCardHeight)
+                        ),
                     shape = RoundedCornerShape(28.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface

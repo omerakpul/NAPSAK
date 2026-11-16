@@ -36,6 +36,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.graphics.asImageBitmap
 import com.napsak.app.ui.qrBitmap
 import com.napsak.app.ui.roomLink
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import coil3.compose.AsyncImage
 
@@ -94,6 +95,81 @@ fun LobbyScreen(
     val myParticipant = room.participants[currentUserId]
     val isReady = myParticipant?.isReady == true
     val isHost = room.hostId == currentUserId
+
+    // phones in landscape and small split-screen windows
+    val compactHeight = LocalConfiguration.current.screenHeightDp < 500
+
+    // Bottom Actions (Ready Toggle & Start Button)
+    val bottomActions: @Composable () -> Unit = {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Toggle Ready Button
+        Button(
+            onClick = {
+                viewModel.toggleReady(roomId, !isReady)
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isReady) Color(0xFF4CAF50) else MaterialTheme.colorScheme.secondary,
+                contentColor = if (isReady) Color.White else MaterialTheme.colorScheme.onSecondary
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = "Hazır Durumu"
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = if (isReady) "Hazırım!" else "Hazır Durumuna Geç",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.Bold
+                )
+            )
+        }
+
+        // Start Voting (Only for Host, active only when everyone is ready)
+        if (isHost) {
+            val allReady = participants.all { it.isReady }
+            Button(
+                onClick = {
+                    onNavigateToCreateChoices(roomId)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(14.dp),
+                enabled = allReady,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = CoralPrimary
+                )
+            ) {
+                Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Başlat")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Oylamayı Başlat",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+            }
+            if (!allReady) {
+                Text(
+                    text = "Oylamayı başlatmak için tüm katılımcıların hazır olması bekleniyor.",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                        textAlign = TextAlign.Center
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+    }
 
     Box(
         modifier = Modifier
@@ -345,78 +421,14 @@ fun LobbyScreen(
                         )
                     }
                 }
+                if (compactHeight) {
+                    item { bottomActions() }
+                }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Bottom Actions (Ready Toggle & Start Button)
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Toggle Ready Button
-                Button(
-                    onClick = {
-                        viewModel.toggleReady(roomId, !isReady)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isReady) Color(0xFF4CAF50) else MaterialTheme.colorScheme.secondary,
-                        contentColor = if (isReady) Color.White else MaterialTheme.colorScheme.onSecondary
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Hazır Durumu"
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isReady) "Hazırım!" else "Hazır Durumuna Geç",
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-                }
-
-                // Start Voting (Only for Host, active only when everyone is ready)
-                if (isHost) {
-                    val allReady = participants.all { it.isReady }
-                    Button(
-                        onClick = {
-                            onNavigateToCreateChoices(roomId)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        enabled = allReady,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = CoralPrimary
-                        )
-                    ) {
-                        Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Başlat")
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Oylamayı Başlat",
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                    if (!allReady) {
-                        Text(
-                            text = "Oylamayı başlatmak için tüm katılımcıların hazır olması bekleniyor.",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                                textAlign = TextAlign.Center
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
+            if (!compactHeight) {
+                Spacer(modifier = Modifier.height(24.dp))
+                bottomActions()
             }
         }
     }

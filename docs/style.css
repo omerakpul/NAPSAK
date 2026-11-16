@@ -48,7 +48,9 @@ body {
     max-width: 440px;
     height: 100vh;
     height: 100dvh;
-    padding: 16px 20px;
+    /* respect notches / rounded corners / home indicators */
+    padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+             max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -86,6 +88,12 @@ body {
     flex-direction: column;
     height: 100%;
     width: 100%;
+    /* a screen taller than the viewport scrolls instead of being cut off */
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
     animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -1037,3 +1045,49 @@ h2 {
     color: var(--text-secondary); transition: background 0.2s ease, color 0.2s ease; }
 .segmented .chip.selected, .segmented .chip[aria-checked="true"] { background: var(--gradient); color: #fff;
     box-shadow: 0 2px 12px var(--primary-glow); }
+
+
+/* ======================= Responsive ======================= */
+.screen > * { flex-shrink: 0; }            /* children keep their size; the screen scrolls */
+.screen > .card-container { flex-shrink: 1; }
+img { max-width: 100%; }
+
+/* Narrow phones (<= 360px) */
+@media (max-width: 360px) {
+    .app-container { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+    .logo-text { font-size: 30px; }
+    .logo-emoji { font-size: 40px; }
+    .header h1 { font-size: 22px; }
+    .glass { padding: 16px; }
+    .share-row { flex-direction: column; align-items: stretch; }
+    .host-qr { align-self: center; }
+    .prompt-buttons { flex-direction: column; }
+    .segmented .chip { padding: 12px 4px; font-size: 13px; }
+}
+
+/* Short viewports: phones in landscape, small windows */
+@media (max-height: 560px) {
+    .brand { margin-bottom: 12px; }
+    .logo-emoji { font-size: 32px; }
+    .logo-text { font-size: 28px; }
+    .brand-tagline { display: none; }
+    .header { margin-bottom: 12px; }
+    .card-container { min-height: 220px; flex-shrink: 0; }
+    .list-voting-items { max-height: none; }
+    .list-container { max-height: none; }
+    .winner-card { min-height: 200px; }
+}
+
+/* Phones in landscape get a wider column so less scrolling is needed */
+@media (orientation: landscape) and (max-height: 560px) and (min-width: 600px) {
+    .app-container { max-width: 640px; }
+}
+
+/* Tablets and desktops */
+@media (min-width: 768px) and (min-height: 561px) {
+    .app-container { max-width: 520px; padding-top: 28px; padding-bottom: 28px; }
+    .card-container { max-height: 460px; }
+}
+@media (min-width: 1200px) and (min-height: 800px) {
+    .app-container { max-width: 560px; }
+}
